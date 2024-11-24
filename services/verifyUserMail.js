@@ -1,0 +1,30 @@
+const nodemailer =require("nodemailer")
+const SendmailTransport = require("nodemailer/lib/sendmail-transport")
+const dotenv = require("dotenv")
+
+const verifyMailer = async (veriToken,veriName,verifyMail)=>{
+   const botask= nodemailer.createTransport({
+        service:'gmail',
+        auth:{
+            user:`${process.env.botMailer}`,
+            pass:`${process.env.botMailpwd}`
+        }
+    })
+
+
+const sendingDetails= {
+    from:process.env.botMailer,
+    to:verifyMail,
+    subject:"ALVENT EVENTS: VERIFY YOUR ACCOUNT",
+    html:`<h1>WELCOME,${veriName}</h1>
+    <br>
+    <br>
+    <h2>${veriToken}</h2>
+     `
+}
+
+const sendMailAtion= await botask.sendMail(sendingDetails)
+ console.log(sendMailAtion)
+}
+
+module.exports=verifyMailer
