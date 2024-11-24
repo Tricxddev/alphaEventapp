@@ -26,7 +26,7 @@ app.use(
   cors({
     origin:"http://localhost:5173",
     methods:["GET", "POST", "PUT", "DELETE"],
-    credentials:true,
+    credentials:false,
   }))
 dotenv.config()
 app.use(express.json())
