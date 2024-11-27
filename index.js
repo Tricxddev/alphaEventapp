@@ -72,7 +72,7 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
     // Successful authentication, redirect to your desired route
-   res.redirect('/dashboard');
+   res.redirect('http://localhost:5173/OnboardingMain');
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
@@ -313,7 +313,7 @@ app.post("/creat%ORGoRg/:userID",async(req,res)=>{
 //CREATE EVENT FOR BOTH IND AND ORG
 app.post("/creat%eVnt/:userID",async(req,res)=>{
   try {
-  const {eventTitle,eventDesc,eventStart,eventEnd,eventType,eventVenue,eventCity,eventCountry,tickeType,ticketPrice}=req.body;
+  const {eventTitle,eventDesc,eventStart,eventEnd,eventType,eventVenue,eventCity,eventCountry,tickeType,eventImgURL,ticketPrice}=req.body;
   //console.log(req.body)
   const {userID}=req.params
   if(!eventTitle||!eventDesc||!eventStart||!eventEnd||!eventType||!eventVenue||!eventCity||!eventCountry||!tickeType||ticketPrice < 0){
@@ -347,7 +347,7 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
    const newEvent = await eventModel.create({
     eventID:await genEvntID(),
     eventTitle:conVTitle,
-    eventImgURL:"",
+    eventImgURL,
     eventDesc,
     eventDate:{
       eventStart,
@@ -366,6 +366,18 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
     msg:"SUCCESSFUL",
     newEvent
   })} catch (error) {return res.status(400).json({msg:error.message})}})
+
+  //GET EVENT
+  app.get("/eventAllGet",async(req,res)=>{
+    try {
+      const evntty= await eventModel.find()
+      
+      res.status(200).json({
+        msg:"SUCCESSFUL",
+        evntty
+      })
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  })
   
 //TICKETING
   app.post("/tickzCrt/:userID/:eventID",async(req,res)=>{

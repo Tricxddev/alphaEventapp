@@ -1,6 +1,7 @@
 const nodemailer =require("nodemailer")
 const SendmailTransport = require("nodemailer/lib/sendmail-transport")
 const dotenv = require("dotenv")
+const { express } = require("express")
 
 const verifyMailer = async (veriToken,veriName,verifyMail)=>{
    const botask= nodemailer.createTransport({
@@ -16,9 +17,10 @@ const sendingDetails= {
     from:process.env.botMailer,
     to:verifyMail,
     subject:"ALVENT EVENTS: VERIFY YOUR ACCOUNT",
-    html:`<h1>WELCOME,${veriName}</h1>
+    html:`<h1>WELCOME,${veriName}</h1>`,
+    text:`    
     <br>
-    <br>
+    <br>HERE IS THE TOKEN:
     <h2>${veriToken}</h2>
      `
 }
