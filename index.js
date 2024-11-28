@@ -47,13 +47,13 @@ passport.use(new GoogleStrategy({
   if(!findUser){
     const newUser= await o2authUser.create({
      googleId:profile.id,
-     userID:new mongoose.Types.ObjectId(),
      name:profile.displayName,
      email:profile.emails[0].value
    })};
    if(!findUsermanual){
    const newUser= await allUserModel.create({
      googleId:profile.id,
+     userID:new mongoose.Types.ObjectId(),
      name:profile.displayName,
      role:"organizer",
      accntStatus:"active",
