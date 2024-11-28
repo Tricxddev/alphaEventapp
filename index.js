@@ -41,12 +41,26 @@ passport.use(new GoogleStrategy({
 
 },async(accessToken,refreshToken,profile,done)=>{
   const findUser= await o2authUser.findOne({googleId:profile.id})
+  const email= await o2authUser.findOne({googleId:profile.emails[0].value})
+  const findUsermanual= await allUserModel.findOne({email})
   if(!findUser){
+
+  if(!findUsermanual){
      const newUser= await o2authUser.create({
       googleId:profile.id,
+      userID,
       name:profile.displayName,
       email:profile.emails[0].value
-    })}
+    })};
+    const newUser= await allUserModel.create({
+      googleId:profile.id,
+      name:profile.displayName,
+      role:organizer,
+      accntStatus,
+      lastLogin,
+      isEmailVerified:true,
+      email:profile.emails[0].value
+    })};
 
   // console.log(profile);
   return done(null,profile)
@@ -378,7 +392,11 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
       })
     } catch (error) {return res.status(400).json({msg:error.message})}
   })
-  
+
+  //GET USER NAME
+  app.get("/userNameFetch",async(req,res)=>{
+    const{googleId,}=req.params
+  })
 //TICKETING
   app.post("/tickzCrt/:userID/:eventID",async(req,res)=>{
     try {
