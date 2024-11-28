@@ -92,7 +92,7 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   res.redirect('http://localhost:5173/OnboardingMain?token=${token}');
+   res.redirect(`http://localhost:5173/OnboardingMain?token=${token}`);
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
