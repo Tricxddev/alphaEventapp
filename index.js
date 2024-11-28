@@ -49,7 +49,7 @@ passport.use(new GoogleStrategy({
   if(!findUsermanual){
      const newUser= await o2authUser.create({
       googleId:profile.id,
-      userID,
+      userID:new mongoose.Types.ObjectId(),
       name:profile.displayName,
       email:profile.emails[0].value
     })};
