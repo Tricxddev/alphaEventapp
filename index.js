@@ -85,8 +85,14 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
+    const user=req.user;
+    const token = jwt.sign(
+      { email: user.email, name: user.name, id: user.id },
+      process.env.refresTk,
+      { expiresIn: '1h' },
+    );
     // Successful authentication, redirect to your desired route
-   res.redirect('http://localhost:5173/OnboardingMain');
+   res.redirect('http://localhost:5173/OnboardingMain?token=${token}');
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
@@ -394,8 +400,14 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
   })
 
   //GET USER NAME
-  app.get("/userNameFetch",async(req,res)=>{
-    const{googleId,}=req.params
+  app.get("/userNameFetch/:email",async(req,res)=>{
+    const{email}=req.params
+    const finduser= await allusermodels.findOne({email});
+    console.log(req)
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      userName:finduser.name
+    })
   })
 //TICKETING
   app.post("/tickzCrt/:userID/:eventID",async(req,res)=>{
