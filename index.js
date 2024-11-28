@@ -56,8 +56,8 @@ passport.use(new GoogleStrategy({
      googleId:profile.id,
      name:profile.displayName,
      role:"organizer",
-     accntStatus,
-     lastLogin,
+     accntStatus:"active",
+     lastLogin:new Date(),
      isEmailVerified:true,
      email:profile.emails[0].value
    })};
