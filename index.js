@@ -42,25 +42,25 @@ passport.use(new GoogleStrategy({
 },async(accessToken,refreshToken,profile,done)=>{
   const findUser= await o2authUser.findOne({googleId:profile.id})
   const email= await o2authUser.findOne({googleId:profile.emails[0].value})
-  const findUsermanual= await allUserModel.findOne({email})
-  if(!findUser){
+  const findUsermanual= await allUserModel.findOne({email});
 
-  if(!findUsermanual){
-     const newUser= await o2authUser.create({
-      googleId:profile.id,
-      userID:new mongoose.Types.ObjectId(),
-      name:profile.displayName,
-      email:profile.emails[0].value
-    })};
-    const newUser= await allUserModel.create({
-      googleId:profile.id,
-      name:profile.displayName,
-      role:"organizer",
-      accntStatus,
-      lastLogin,
-      isEmailVerified:true,
-      email:profile.emails[0].value
-    })};
+  if(!findUser){
+    const newUser= await o2authUser.create({
+     googleId:profile.id,
+     userID:new mongoose.Types.ObjectId(),
+     name:profile.displayName,
+     email:profile.emails[0].value
+   })};
+   if(!findUsermanual){
+   const newUser= await allUserModel.create({
+     googleId:profile.id,
+     name:profile.displayName,
+     role:"organizer",
+     accntStatus,
+     lastLogin,
+     isEmailVerified:true,
+     email:profile.emails[0].value
+   })};
 
   // console.log(profile);
   return done(null,profile)
