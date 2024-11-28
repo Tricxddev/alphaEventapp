@@ -55,7 +55,7 @@ passport.use(new GoogleStrategy({
     const newUser= await allUserModel.create({
       googleId:profile.id,
       name:profile.displayName,
-      role:organizer,
+      role:"organizer",
       accntStatus,
       lastLogin,
       isEmailVerified:true,
