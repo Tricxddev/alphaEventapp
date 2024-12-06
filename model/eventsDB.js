@@ -22,6 +22,7 @@ const eventSchema = new mongoose.Schema({
     tickeType:{type:String,required:true,enum:["general","vip"]},
     eventCapacity:{type:Number,default:0},
     eventTicketSold:{type:Number,default:0},
+    eventTicketCount:{type:Number,default:0},//not updated in all db
     //publishEvnt:{type:String,require:true,enum:["yes","no"]}
 
 })

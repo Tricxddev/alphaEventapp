@@ -29,6 +29,7 @@ app.use('*',cors({
   }))
 dotenv.config()
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }));
 dbconnect()
 const PORT= process.env.appPort || 7000
 app.listen(PORT,()=>{
@@ -87,7 +88,7 @@ app.get('/auth/google/callback',
   (req, res) => {
     const user=req.user;
     const token = jwt.sign(
-      { email: user.email, name: user.name, id: user.id },
+      { email: user.email },
       process.env.refresTk,
       { expiresIn: '1h' },
     );
@@ -134,9 +135,10 @@ try {
   if(existinUser){
     return res.status(409).json({msg:"USER ALREADY EXIST"});
   };
+  const nameCap= await name.toUpperCase()
   const newUser= await allUserModel.create({
     userID:new mongoose.Types.ObjectId(),
-    name,
+    name:nameCap,
     email,
     verifyOTpw:generateOTpw(),
     passWd:hashPass,
@@ -231,6 +233,7 @@ app.post("/login%User",async(req,res)=>{
     res.status(200).json({
       msg:"SUCCESSFUL",
       userID:existinUser.userID,
+      name:existinUser.name,
       lastLogin:datexepl
     })
   }catch(error){return res.status(400).json({msg:error.message})}
@@ -399,16 +402,81 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
     } catch (error) {return res.status(400).json({msg:error.message})}
   })
 
-  //GET USER NAME
-  app.get("/userNameFetch/:email",async(req,res)=>{
-    const{email}=req.params
-    const finduser= await allusermodels.findOne({email});
-    console.log(req)
+  //GET USER NAME FOR GOOGLE AUTH PURPOSE
+  app.get("/userNameFetch/",async(req,res)=>{
+    const{email}=req.query
+    const finduser= await allUserModel.findOne({email});
+    console.log(req.params)
     return res.status(200).json({
       msg:"SUCCESSFUL",
       userName:finduser.name
     })
   })
+  //FETCH USER NAME AFTER MANUAL LOGIN
+  app.get("/userNameMFetch/:userEmail",async(req,res)=>{
+    const{userEmail}=req.params
+    const finduser= await allUserModel.findOne({email:userEmail});
+    console.log(req.params)
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      name:finduser.name
+    })
+  })
+  //GET TICKET REVENUE
+  app.get('/orGTicketRev/:userEmail',async(req,res)=>{
+    const{userEmail}=req.params
+    try {
+      // Search in indiOrgModel
+      const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
+      console.log(findIndiUser.totalEarning)
+      if (findIndiUser) {
+        console.log("found in indUser")
+        return res.status(200).json({
+          msg: "SUCCESSFUL",
+          totalRevenue: findIndiUser.totalEarning
+        })}else{console.log("found in Orguser")}
+
+      // Search in orgORGmodel
+      const findOrgUser = await orgORGmodel.findOne({ email: userEmail });
+  
+      if (findOrgUser) {
+        console.log("found in Orguser")
+        return res.status(200).json({
+          msg: "SUCCESSFUL",
+          totalRevenue: findOrgUser.totalEarning
+        })}else{console.log("found in indUser")}
+      
+  
+      // If no user found in either model
+      return res.status(404).json({
+        msg: "User not found"
+      });
+  
+    } catch (error) {
+      console.error("Error fetching ticket revenue:", error);
+      return res.status(500).json({
+        msg: "Server Error",
+        error: error.message,
+      });}
+  });
+
+  //GET TOTAL TICKET COUNT ORGANIZER WISE
+  app.get('/totTikContDisp/:userEmail',async(req,res)=>{
+    try{
+    const{userEmail}=req.params
+    //const findUserMail= await allUserModel.findOne({email:userEmail})
+    const findUserId= "6737745be3d1857286917723"//await findUserMail.userID
+    const ticketsSold= await ticktModel.countDocuments({orgID:findUserId})
+    
+    res.status(200).json({
+      msg:"SUCCESSFULL",
+      ticketsSold
+    })}catch(error){res.status(400).json({msg:error.message})}
+
+  })
+
+
+
 //TICKETING
   app.post("/tickzCrt/:userID/:eventID",async(req,res)=>{
     try {
