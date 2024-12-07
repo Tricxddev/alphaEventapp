@@ -43,7 +43,7 @@ passport.use(new GoogleStrategy({
 },async(accessToken,refreshToken,profile,done)=>{
   const findUser= await o2authUser.findOne({googleId:profile.id})
   const email= await o2authUser.findOne({googleId:profile.emails[0].value})
-  const findUsermanual= await allUserModel.findOne({email});
+  const findUsermanual= await allUserModel.findOne({email:email});
 
   if(!findUser){
     const newUser= await o2authUser.create({
@@ -212,14 +212,20 @@ app.post("/confirmedToken/:userID",async(req,res)=>{
   }catch(error){return res.status(400).json({msg:error.message})}
 })
 
+//ALL USER COUNT
+app.get("/getalluserCont",async(req,res)=>{
+  const userCount=await allUserModel.countDocuments()
+  res.json(userCount)
+})
 
-app.post("/login%User",async(req,res)=>{
+app.post("/loginUser",async(req,res)=>{
   try{
     const{email,passWd}=req.body
-    const existinUser = await allUserModel.findOne({email})
+    const existinUser = await allUserModel.findOne({email:email})
+    console.log(req.body)
 
     if(!existinUser){
-      return res.status(403).json({msg:"ACCESS DENIED"})
+      return res.status(403).json({msg:"ACCESSRR DENIED"})
     };
     const unHaspwd= await bcrypt.compare(passWd,existinUser.passWd)
     if(!unHaspwd){
