@@ -41,6 +41,16 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.gcallbackURL
 
 },async(accessToken,refreshToken,profile,done)=>{
+
+
+         // Log the raw profile data received from Google
+         console.log("Google Profile Data:", profile);
+
+         // Extract specific fields for debugging
+         console.log("Google ID:", profile.id);
+         console.log("Name:", profile.displayName);
+         console.log("Email:", profile.emails[0].value);
+
   const existingOAuthUser= await o2authUser.findOne({googleId:profile.id})
   if(!existingOAuthUser){
      await o2authUser.create({
@@ -65,18 +75,6 @@ passport.use(new GoogleStrategy({
         email: profile.emails[0].value,
       });
     }
-
-   if(!findUsermanual){
-    await allUserModel.create({
-     googleId:profile.id,
-     userID:new mongoose.Types.ObjectId(),
-     name:profile.displayName,
-     role:"organizer",
-     accntStatus:"active",
-     lastLogin:new Date(),
-     isEmailVerified:true,
-     email:profile.emails[0].value
-   })};
    const user = await o2authUser.findOne({ googleId: profile.id })
 
   // console.log(profile);
