@@ -108,10 +108,24 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   res.redirect(`http://localhost:5173/OnboardingMain?token=${token}`);
+   res.redirect(`http://localhost:5000/userInfo?googleId=${googleId}`);
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
+app.get('/userInfo', async (req, res) => {
+  try {
+    const { googleId } = req.query; // Pass googleId as a query parameter
+    const user = await allUserModel.findOne({ googleId });
+    if (user) {
+      res.status(200).json({ name: user.name, email: user.email });
+    } else {
+      res.status(404).json({ msg: "User not found" });
+    }
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+});
+
 app.get('/dashboard',ensureAuth,(req,res)=>{
   res.send(`hello,${req.user.displayName}`)
 })
