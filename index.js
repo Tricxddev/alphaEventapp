@@ -41,18 +41,33 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.gcallbackURL
 
 },async(accessToken,refreshToken,profile,done)=>{
-  const findUser= await o2authUser.findOne({googleId:profile.id})
-  const email= await o2authUser.findOne({googleId:profile.emails[0].value})
-  const findUsermanual= await allUserModel.findOne({email:email});
-
-  if(!findUser){
-    const newUser= await o2authUser.create({
+  const existingOAuthUser= await o2authUser.findOne({googleId:profile.id})
+  if(!existingOAuthUser){
+     await o2authUser.create({
      googleId:profile.id,
      name:profile.displayName,
      email:profile.emails[0].value
    })};
+
+    const email = profile.emails[0].value;
+    const existingManualUser = await allUserModel.findOne({ email });
+
+
+    if (!existingManualUser) {
+      await allUserModel.create({
+        googleId: profile.id,
+        userID: new mongoose.Types.ObjectId(),
+        name: profile.displayName,
+        role: "organizer",
+        accntStatus: "active",
+        lastLogin: new Date(),
+        isEmailVerified: true,
+        email: profile.emails[0].value,
+      });
+    }
+
    if(!findUsermanual){
-   const newUser= await allUserModel.create({
+    await allUserModel.create({
      googleId:profile.id,
      userID:new mongoose.Types.ObjectId(),
      name:profile.displayName,
@@ -62,9 +77,10 @@ passport.use(new GoogleStrategy({
      isEmailVerified:true,
      email:profile.emails[0].value
    })};
+   const user = await o2authUser.findOne({ googleId: profile.id })
 
   // console.log(profile);
-  return done(null,profile)
+  return done(null,user)
 }));
 
 
@@ -74,10 +90,11 @@ app.use(passport.session())
 
 //serialize & deserialize user infomation
 passport.serializeUser((user,done)=>{
-    done(null,user)
+    done(null,user.id)
 });
-passport.deserializeUser((obj,done)=>{
-    done(null,obj)
+passport.deserializeUser(async(id,done)=>{
+    const user = await o2authUser.findById(id)
+    done(null,user)
 })
 // Route to initiate Google OAuth
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
