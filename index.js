@@ -108,7 +108,7 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   res.redirect(`http://localhost:5000/OnboardingMain`);
+   res.redirect(`http://localhost:5173/OnboardingMain`);
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
