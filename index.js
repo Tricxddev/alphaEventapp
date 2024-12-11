@@ -52,18 +52,11 @@ passport.use(new GoogleStrategy({
          console.log("Email:", profile.emails[0].value);
 
   const existingOAuthUser= await o2authUser.findOne({googleId:profile.id})
-  if(!existingOAuthUser){
-     await o2authUser.create({
-     googleId:profile.id,
-     name:profile.displayName,
-     email:profile.emails[0].value
-   })};
 
     const email = profile.emails[0].value;
     const existingManualUser = await allUserModel.findOne({ email });
 
-
-    if (!existingManualUser) {
+    if (!existingOAuthUser && !existingManualUser) {
       await allUserModel.create({
         googleId: profile.id,
         userID: new mongoose.Types.ObjectId(),
@@ -74,6 +67,14 @@ passport.use(new GoogleStrategy({
         isEmailVerified: true,
         email: profile.emails[0].value,
       });
+
+    if(!existingOAuthUser){
+     await o2authUser.create({
+     googleId:profile.id,
+     name:profile.displayName,
+     email:profile.emails[0].value
+   })};
+
     }
    const user = await o2authUser.findOne({ googleId: profile.id })
 
@@ -108,21 +109,38 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   res.redirect(`http://localhost:5173/OnboardingMain/`);
+   res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
 app.get('/userInfo', async (req, res) => {
   try {
-    const { googleId } = req.query; // Pass googleId as a query parameter
-    const user = await allUserModel.findOne({ googleId });
+    // Retrieve the token from the Authorization header
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, msg: 'Unauthorized access' });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.refresTk);
+
+    // Use the decoded token to find the user
+    const user = await allUserModel.findOne({ email: decoded.email });
+
     if (user) {
-      res.status(200).json({ name: user.name, email: user.email });
+      res.status(200).json({
+        msg: "SUCCESSFUL",
+        name: user.name,
+        email: user.email,
+      });
     } else {
-      res.status(404).json({ msg: "User not found" });
+      res.status(404).json({ success: false, msg: 'User not found' });
     }
   } catch (error) {
-    res.status(500).json({ msg: error.message });
+    res.status(500).json({ success: false, msg: error.message });
   }
 });
 
