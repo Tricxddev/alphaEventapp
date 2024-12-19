@@ -1,5 +1,8 @@
 const express = require("express")
 const session =require("express-session")
+const xml2js = require("xml2js");
+const multer = require("multer");
+const upload = multer({ dest: "uploads/" });
 const mongoose =require("mongoose")
 const passport =require("passport")
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
@@ -9,6 +12,14 @@ const jwt=require("jsonwebtoken")
 const moment=require("moment")
 const cors=require("cors")
 const app = express()
+const Stripe = require("stripe");
+const stripe = Stripe("your-secret-key");
+const path = require("path"); // To handle file paths
+const axios = require("axios"); // To handle external API
+const GEO_NAMES_USERNAME = 'ALVENT'; 
+const cloudinary = require("cloudinary").v2;
+
+const fs = require('fs');
 
 
 //MODULE EXPORTS
@@ -20,6 +31,8 @@ const verifyMailer=require("./services/verifyUserMail")
 const {orgORGmodel,indiOrgModel,allUserModel}=require("./model/organizerDB")
 const sessionModel=require("./model/sessiosDB")
 const ticktModel=require("./model/ticketDb")
+const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
+//const landingFtPagination=require("./services/utilities")
 
 //CONFIGS
 app.use('*',cors({
@@ -32,6 +45,19 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 dbconnect()
 const PORT= process.env.appPort || 7000
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+const uploadImage = async (filePath) => {
+  const result = await cloudinary.uploader.upload(filePath, {
+    folder: "my-folder",
+  });
+  return result.secure_url;
+};
+const GEO_API_HOST = 'wft-geo-db.p.rapidapi.com';
+const GEO_API_KEY = process.env.geoApiscrtky; 
 app.listen(PORT,()=>{
     console.log(`This app now listen on ${PORT}`)
 });
@@ -44,12 +70,12 @@ passport.use(new GoogleStrategy({
 
 
          // Log the raw profile data received from Google
-         console.log("Google Profile Data:", profile);
+         //console.log("Google Profile Data:", profile);
 
          // Extract specific fields for debugging
-         console.log("Google ID:", profile.id);
-         console.log("Name:", profile.displayName);
-         console.log("Email:", profile.emails[0].value);
+        //  console.log("Google ID:", profile.id);
+        //  console.log("Name:", profile.displayName);
+        //  console.log("Email:", profile.emails[0].value);
 
   const existingOAuthUser= await o2authUser.findOne({googleId:profile.id})
 
@@ -57,7 +83,7 @@ passport.use(new GoogleStrategy({
     const existingManualUser = await allUserModel.findOne({ email });
 
     if (!existingOAuthUser && !existingManualUser) {
-      await allUserModel.create({
+      const newUser=  await allUserModel.create({
         googleId: profile.id,
         userID: new mongoose.Types.ObjectId(),
         name: profile.displayName,
@@ -68,14 +94,36 @@ passport.use(new GoogleStrategy({
         email: profile.emails[0].value,
       });
 
+
     if(!existingOAuthUser){
      await o2authUser.create({
      googleId:profile.id,
      name:profile.displayName,
      email:profile.emails[0].value
-   })};
-
-    }
+   })
+   const existingIndiOrg = await indiOrgModel.findOne({ email: profile.emails[0].value });
+   if (!existingIndiOrg){
+    await indiOrgModel.create({
+      IndName:{
+              firstName: profile.displayName?.split(' ')[0] || '', 
+              lastName: profile.displayName?.split(' ')[1] || ''
+      },
+      phnCntkt:{
+        countryCd,
+        phnNum
+      },
+      address:"",
+      email:profile.emails[0].value,
+      userID:newUser.userID,
+      regDate:new Date(),
+      userFollow:[],
+      userFollowCnt:0,
+      crtdTketz:[],
+      crtdTketCnt:0,
+      totalEarning:0
+    })}
+  };}
+   
    const user = await o2authUser.findOne({ googleId: profile.id })
 
   // console.log(profile);
@@ -113,28 +161,38 @@ app.get('/auth/google/callback',
    // res.redirect('/updt%Passwd/:googleId');
   }
 );
+
+
+
 app.get('/userInfo', async (req, res) => {
   try {
     // Retrieve the token from the Authorization header
     const authHeader = req.headers.authorization;
+    // console.log(authHeader)
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ success: false, msg: 'Unauthorized access' });
     }
 
     const token = authHeader.split(' ')[1];
+    
 
     // Verify the token
     const decoded = jwt.verify(token, process.env.refresTk);
 
+    //console.log(decoded)
+
     // Use the decoded token to find the user
     const user = await allUserModel.findOne({ email: decoded.email });
+
+    //console.log(user)
 
     if (user) {
       res.status(200).json({
         msg: "SUCCESSFUL",
+        data:{
         name: user.name,
-        email: user.email,
+        email: user.email,}
       });
     } else {
       res.status(404).json({ success: false, msg: 'User not found' });
@@ -191,9 +249,28 @@ try {
     passWd:hashPass,
     lastLogin: new Date()      
   });
+  await indiOrgModel.create({
+    IndName:{
+            firstName: nameCap, 
+            lastName:  nameCap|| ''
+    },
+    phnCntkt:{
+      countryCd,
+      phnNum
+    },
+    address:"",
+    email,
+    userID:newUser.userID,
+    regDate:new Date(),
+    userFollow:[],
+    userFollowCnt:0,
+    crtdTketz:[],
+    crtdTketCnt:0,
+    totalEarning:0
+  })
   if(!newUser)throw new Error("ERROR IN DATA SAVE");
   //res.redirect('/dashboard');
-  console.log("SUCCESSFUL");
+  //console.log("SUCCESSFUL");
   res.status(200).json({
   msg:"SUCCESSFUL"
   });
@@ -269,7 +346,7 @@ app.post("/loginUser",async(req,res)=>{
   try{
     const{email,passWd}=req.body
     const existinUser = await allUserModel.findOne({email:email})
-    console.log(req.body)
+    //console.log(req.body)
 
     if(!existinUser){
       return res.status(403).json({msg:"ACCESSRR DENIED"})
@@ -293,7 +370,7 @@ app.post("/loginUser",async(req,res)=>{
 
 })
 
-app.post("/creat%IndioRg/:userID",async(req,res)=>{
+app.post("/creatIndioRg/:userID",async(req,res)=>{
   try {
     const {userID}=req.params;
     const {firstName,lastName,countryCd,phnNum,address}=req.body
@@ -377,7 +454,7 @@ app.post("/creat%ORGoRg/:userID",async(req,res)=>{
     userID:findUser.userID},
     {role:"organizer"},
     {new:true});
-  console.log(req)
+  //console.log(req)
   res.status(200).json({
     msg:"SUCCESSFULL",
     reaDate,
@@ -387,23 +464,46 @@ app.post("/creat%ORGoRg/:userID",async(req,res)=>{
 });
 
 //CREATE EVENT FOR BOTH IND AND ORG
-app.post("/creat%eVnt/:userID",async(req,res)=>{
+app.post("/createVnt/:userID",async(req,res)=>{
   try {
-  const {eventTitle,eventDesc,eventStart,eventEnd,eventType,eventVenue,eventCity,eventCountry,tickeType,eventImgURL,ticketPrice}=req.body;
-  //console.log(req.body)
+  const {
+    eventTitle,
+    eventDesc,
+    eventDate,
+    eventType,
+    eventCapacity,
+    maximumattedees,
+    customTags,
+    eventVenue,
+    eventState,
+    eventCity,
+    eventCountry,
+    tickeType,
+    eventImgURL,
+    ticketPrice }=req.body;
+  console.log(req.body)
   const {userID}=req.params
-  if(!eventTitle||!eventDesc||!eventStart||!eventEnd||!eventType||!eventVenue||!eventCity||!eventCountry||!tickeType||ticketPrice < 0){
+  if(
+    !eventTitle||
+    !eventDesc||
+    !eventDate ||
+    !eventType||
+    !tickeType){
     return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
   };
   
-  if(new Date(eventStart) < new Date()||new Date(eventEnd) <= new Date()){
-    return res.status(400).json({msg:"DATE CANNOT BE YESTERDAY OR LESS"})
-  };
+    // Date validation
+    const eventStart = new Date(eventDate?.eventStart);
+    const eventEnd = new Date(eventDate?.eventEnd);
+    if (eventStart < new Date() || eventEnd <= new Date()) {
+      return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
+    }
+
   
-  const findID= await allUserModel.findOne({userID})
-  if(!findID){
-    res.status(400).json({msg:"UNKNOWN USER"})  
-  };
+ const findUser = await allUserModel.findOne({ userID });
+    if (!findUser) {
+      return res.status(400).json({ msg: "UNKNOWN USER" });
+    }
   const {nanoid}= await  import('nanoid');
   const conVTitle= await eventTitle.toUpperCase()
   const createDT= new Date().toISOString().replace(/[-:.TZ]/g, '')
@@ -412,10 +512,10 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
   const genEvntID= async()=>{
     if(findORGID){
        spltORGNm= findORGID.orgName.slice(0,3).toUpperCase()
-       return await `${spltORGNm}-${createDT}-${nanoid(5)}`;
+       return  `${spltORGNm}-${createDT}-${nanoid(5)}`;
     }else{
       //if(!findORGID){
-       return await `ALV-${createDT}-${nanoid(5)}`;
+       return `ALV-${createDT}-${nanoid(5)}`;
     }}
 
   const useORGID = findORGID ? findORGID.userID :null;
@@ -428,29 +528,115 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
     eventDate:{
       eventStart,
       eventEnd},
+      startTime,
+      endTime,
     eventType,
+    eventUrl,
     eventLocation:{
       eventVenue,
       eventCity,
+      eventState,
       eventCountry},
+    //isPrivate,
+    maximumattedees,
+    //eventCapacity,
+    //customTags: customTags?.split(","),
     orgID: useORGID,
-    userID:findID.userID,
+    userID:findUser.userID,
     tickeType,
     ticketPrice
   })
   res.status(200).json({
     msg:"SUCCESSFUL",
     newEvent
-  })} catch (error) {return res.status(400).json({msg:error.message})}})
+  })} catch (error) {return res.status(400).json({msg:error.message})}});
 
   //GET EVENT
-  app.get("/eventAllGet",async(req,res)=>{
+  app.get("/fetureventAllGet",async(req,res)=>{
     try {
-      const evntty= await eventModel.find()
+      const {limit}=landingFtPagination(req)
+      const evntty= await eventModel.find().limit(limit)
+
+      const userIds = evntty.map((event) => event.userID);
+      //console.log(userIds)
+
+      const orgZ = await allUserModel.find({ userID: { $in: userIds } });
+      //console.log(orgZ)
+          // Create a mapping of userID to organizer name for quick lookup
+      const organizerMap = orgZ.reduce((map, organizer) => {
+      map[organizer.userID] = organizer.name;
+      return map;
+    }, {});
+
+    const evnttyWithOrgNames = evntty.map((event) => ({
+      ...event._doc, // Spread event document fields
+      organizerName: organizerMap[event.userID] || "Unknown Organizer",
+    }));
+
       
       res.status(200).json({
         msg:"SUCCESSFUL",
-        evntty
+        evntty:evnttyWithOrgNames
+      })
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  });
+
+  app.get("/eventDetails/:eventID",async(req,res)=>{
+    try {
+      const {eventID}=req.params
+      //console.log("eventID:",eventID)
+      const evnttd= await eventModel.findOne({eventID})
+      if (!evnttd) {
+        return res.status(404).json({ msg: "Event not found" });
+      }
+     // console.log("eventID:",evnttd)
+      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY, h:mm:ss a");
+      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY, h:mm:ss a");
+
+      const userId = evnttd.userID;
+      let organizerName = "Unknown Organizer";
+      //console.log("userID:",userId)
+
+      if (userId) {
+        const organizer = await allUserModel.findOne({ userId });
+        organizerName = organizer?.name || "Unknown Organizer";
+      }
+      const evnttyWithOrgNames = {
+        ...evnttd._doc, // Spread the event document fields
+        organizerName,
+        eventStart: formattedEventStart,
+        eventEnd: formattedEventEnd,
+      };
+      
+      res.status(200).json({
+        msg:"SUCCESSFUL",
+        evnttd:evnttyWithOrgNames
+      })
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  });
+//yet to implement
+  app.get("/trndeventAllGet",async(req,res)=>{
+    try {
+      const {limit}=landingtrdPagination(req)
+      const evntty= await eventModel.find().limit(limit)
+      const userIds = evntty.map((event) => event.userID);
+      const orgZ = await allUserModel.find({ userID: { $in: userIds } });
+          // Create a mapping of userID to organizer name for quick lookup
+      const organizerMap = orgZ.reduce((map, organizer) => {
+      map[organizer.userID] = organizer.name;
+      return map;
+    }, {});
+
+    const evnttyWithOrgNames = evntty.map((event) => ({
+      ...event._doc, // Spread event document fields
+      organizerName: organizerMap[event.userID] || "Unknown Organizer",
+    }));
+
+      //console.log(evnttyWithOrgNames)
+      
+      res.status(200).json({
+        msg:"SUCCESSFUL",
+        evntty:evnttyWithOrgNames
       })
     } catch (error) {return res.status(400).json({msg:error.message})}
   })
@@ -459,7 +645,6 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
   app.get("/userNameFetch/",async(req,res)=>{
     const{email}=req.query
     const finduser= await allUserModel.findOne({email});
-    console.log(req.params)
     return res.status(200).json({
       msg:"SUCCESSFUL",
       userName:finduser.name
@@ -469,19 +654,33 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
   app.get("/userNameMFetch/:userEmail",async(req,res)=>{
     const{userEmail}=req.params
     const finduser= await allUserModel.findOne({email:userEmail});
-    console.log(req.params)
     return res.status(200).json({
       msg:"SUCCESSFUL",
       name:finduser.name
+    })
+  });
+//UTILITY FOR OTHER USE
+  app.get("/userNamFetch/:userEmail",async(req,res)=>{
+    const{userEmail}=req.params
+
+    const finduser= await allUserModel.findOne({email:userEmail});
+    //console.log(req.params)
+    //console.log("USERFOUND:",finduser)
+    
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      data:finduser
     })
   })
   //GET TICKET REVENUE
   app.get('/orGTicketRev/:userEmail',async(req,res)=>{
     const{userEmail}=req.params
+    
     try {
       // Search in indiOrgModel
       const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
-      console.log(findIndiUser.totalEarning)
+     // console.log("userEmail:",findIndiUser)
+
       if (findIndiUser) {
         console.log("found in indUser")
         return res.status(200).json({
@@ -531,20 +730,21 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
 
 
 //TICKETING
-  app.post("/tickzCrt/:userID/:eventID",async(req,res)=>{
+  app.post("/tickzCrt/:eventID",async(req,res)=>{
     try {
-      const{eventID,userID}=req.params;
-
-    if(!userID){
-      return res.status(400).json({msg:"USER NEED TO BE LOGGED IN"})
+      const{eventID}=req.params;
+     // console.log("ticketeventid:",eventID)
+    if(!eventID){
+      return res.status(400).json({msg:"Event ID is required"})
     }
+
     const {nanoid}= await  import('nanoid');
     const findevntID= await eventModel.findOne({eventID})
     if(!findevntID){
       res.status(400).json({msg:"UNKNOWN ACTION"})  
     };
-    const findORGID=await orgORGmodel.findOne({userID})
-    console.log(findevntID)
+    const findORGID=await orgORGmodel.findOne({orgID:findevntID.orgID})
+    //console.log(findevntID)
     const useID= findORGID? findORGID.userID :null;
 
     const genTicketID= async()=>{
@@ -560,7 +760,7 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
       const ticktPRICe=findevntID.ticketPrice;
       const ticketID= await genTicketID()
 
-      console.log(ticketID)
+      //console.log(ticketID)
 
      const newTicket = new ticktModel({
       ticketID:ticketID,
@@ -581,4 +781,142 @@ app.post("/creat%eVnt/:userID",async(req,res)=>{
   })
 
 
-  
+//STRIPE API
+app.post("/create-payment-intent", async (req, res) => {
+  try {
+    const { eventID, totalCost } = req.body;
+
+    if (!eventID || totalCost === undefined) {
+      return res.status(400).json({ msg: "Invalid data" });
+    }
+
+    // Skip payment intent creation for free events
+    if (totalCost === 0) {
+      return res.json({ clientSecret: null });
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: totalCost * 100, // Stripe expects the amount in cents
+      currency: "ngn",
+      metadata: { eventID },
+    });
+
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
+  }
+});
+
+// Fetch all countries
+app.get("/countries", async (req, res) => {
+  try {
+    const response = await axios.get(`http://api.geonames.org/countryInfo?formatted=true&lang=eng&username=${GEO_NAMES_USERNAME}`);
+    
+
+    // Convert XML response to JSON
+    xml2js.parseString(response.data, (err, result) => {
+      if (err) {
+        console.error("Error parsing XML:", err);
+        return res.status(500).json({ message: "Error parsing XML" });
+      }
+
+      // Check if 'country' array exists and map over it
+      const countries = result.geonames.country.map(country => ({
+        geonameId: country.geonameId[0],
+        countryName: country.countryName[0]
+      }));
+
+      res.status(200).json(countries);
+    });
+    
+  } catch (error) {
+    console.error("Error fetching countries:", error.message);
+    res.status(500).json({ message: "Error fetching countries" });
+  }
+});
+
+// Fetch STATE for a specific state
+app.get("/states/:countryId", async (req, res) => {
+  const { countryId } = req.params;
+
+  try {
+    const response = await axios.get(`http://api.geonames.org/children?geonameId=${countryId}&username=${GEO_NAMES_USERNAME}`);
+    
+
+    
+    xml2js.parseString(response.data, (err, result) => {
+      if (err) {
+        console.error("Error parsing XML:", err);
+        return res.status(500).json({ message: "Error parsing XML" });
+      }
+
+      const geonames = result?.geonames;
+      const totalResultsCount = parseInt(geonames?.totalResultsCount[0], 10);
+
+      if (totalResultsCount === 0) {
+        // No states found
+        console.log("No states found for countryId:", countryId);
+        return res.status(200).json([]);
+      }
+
+
+      // Map states
+      const states = geonames.geoname?.map((state) => ({
+        geonameId: state.geonameId[0],
+        stateName: state.name[0],
+      })) || [];
+      //console.log("Raw Response:", states);
+      res.status(200).json(states);
+    });
+  } catch (error) {
+    console.error("Error fetching states:", error.message);
+    res.status(500).json({ message: "Error fetching states" });
+  }
+});
+// Fetch STATE for a specific state
+app.get("/cities/:stateId", async (req, res) => {
+  const { stateId } = req.params;
+
+  try {
+    const response = await axios.get(
+      `http://api.geonames.org/children?geonameId=${stateId}&username=${GEO_NAMES_USERNAME}`
+    );
+
+    xml2js.parseString(response.data, (err, result) => {
+      if (err) {
+        console.error("Error parsing XML:", err);
+        return res.status(500).json({ message: "Error parsing XML" });
+      }
+
+      const geonames = result?.geonames;
+      const totalResultsCount = parseInt(geonames?.totalResultsCount[0], 10);
+
+      if (totalResultsCount === 0) {
+        // No cities found
+        console.log("No cities found for stateId:", stateId);
+        return res.status(200).json([]); // Return an empty array
+      }
+
+      const cities = geonames.geoname?.map((city) => ({
+        geonameId: city.geonameId[0],
+        cityName: city.name[0],
+      })) || [];
+      //console.log("Raw Response:", cities);
+      res.status(200).json(cities);
+    });
+  } catch (error) {
+    console.error("Error fetching cities:", error.message);
+    res.status(500).json({ message: "Error fetching cities" });
+  }
+});
+
+//multer
+app.post("/upload", upload.single("file"), async (req, res) => {
+  try {
+    const filePath = req.file.path; // Temporary file path
+    const imageURL = await uploadImage(filePath);
+    res.json({ success: true, url: imageURL });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
