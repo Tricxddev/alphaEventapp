@@ -504,7 +504,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
       return res.status(400).json({ msg: "UNKNOWN USER" });
     }
   const {nanoid}= await  import('nanoid');
-  const conVTitle= await eventTitle.toUpperCase()
+  //const conVTitle= await eventTitle.toUpperCase()
   const createDT= new Date().toISOString().replace(/[-:.TZ]/g, '')
   const findORGID=await orgORGmodel.findOne({userID})
 
@@ -521,7 +521,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
 
    const newEvent = await eventModel.create({
     eventID:await genEvntID(),
-    eventTitle:conVTitle,
+    eventTitle,
     eventImgURL,
     eventDesc,
     eventDate:{
