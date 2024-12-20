@@ -486,7 +486,6 @@ app.post("/createVnt/:userID",async(req,res)=>{
   if(
     !eventTitle||
     !eventDesc||
-    !eventDate ||
     !eventType||
     !tickeType){
     return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
@@ -528,8 +527,8 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventDate:{
       eventStart,
       eventEnd},
-      startTime,
-      endTime,
+      StartTime,
+      EndTime,
     eventType,
     eventUrl,
     eventLocation:{
