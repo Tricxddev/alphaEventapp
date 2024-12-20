@@ -552,7 +552,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
   })} catch (error) {return res.status(400).json({msg:error.message})}});
 
   //GET EVENT
-  app.use("/API",)
+  //app.use("/API",)
 
   app.get("/eventDetails/:eventID",async(req,res)=>{
     try {
