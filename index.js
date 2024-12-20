@@ -483,13 +483,13 @@ app.post("/createVnt/:userID",async(req,res)=>{
     ticketPrice }=req.body;
   console.log(req.body)
   const {userID}=req.params
-  if(
-    !eventTitle||
-    !eventDesc||
-    !eventType||
-    !tickeType){
-    return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
-  };
+  // if(
+  //   !eventTitle||
+  //   !eventDesc||
+  //   !eventType||
+  //   !tickeType){
+  //   return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
+  // };
   
     // Date validation
     const eventStart = new Date(eventDate?.eventStart);
