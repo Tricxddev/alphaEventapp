@@ -10,8 +10,8 @@ const eventSchema = new mongoose.Schema({
         eventStart:{type:Date,required:true,default:Date.now},
         eventEnd:{type:Date,required:true,default:Date.now}
     },
-    endTime:{type: String},
-    startTime:{type: String},
+    EndTime:{type: String},
+    StartTime:{type: String},
     //eventCat:{type: String},
     eventType:{type:String,required:true,enum:["Physical","Online"]},
     isPrivate: { type: Boolean, default: false },
@@ -28,7 +28,7 @@ const eventSchema = new mongoose.Schema({
     orgID:{type:mongoose.Schema.Types.ObjectId,ref:"orgORGmodel"},
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
     ticketPrice:{type:Number,default:0},
-    tickeType:{type:String,required:true,enum:["Regular","Vip"]},
+    tickeType:{type:String,required:true,enum:["others","Vip"]},
     eventCapacity:{type:Number,default:0},
     eventTicketSold:{type:Number,default:0},
     eventTicketCount:{type:Number,default:0},//not updated in all db
