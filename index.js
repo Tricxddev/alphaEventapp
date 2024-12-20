@@ -54,11 +54,28 @@ const tickzCrtFETCH=require("./routes/tickzCrtRout.js")
 //const landingFtPagination=require("./services/utilities")
 
 //CONFIGS
-app.use('*',cors({
-    origin:"http://localhost:5173",
-    methods:["GET", "POST", "PUT", "DELETE"],
-    credentials:true,
-  }))
+// app.use('*',cors({
+//     origin:"http://localhost:5173",
+//     methods:["GET", "POST", "PUT", "DELETE"],
+//     credentials:true,
+//   }))
+const allowedOrigins = ['http://localhost:5173', 'https://your-production-site.com'];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
+app.use((req, res, next) => {
+  console.log(`Request Origin: ${req.headers.origin}`);
+  next();
+});
+
 dotenv.config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
