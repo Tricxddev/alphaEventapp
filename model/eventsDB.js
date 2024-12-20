@@ -14,7 +14,7 @@ const eventSchema = new mongoose.Schema({
     StartTime:{type: String},
     //eventCat:{type: String},
     eventType:{type:String,required:true,enum:["Physical","Online"]},
-    isPrivate: { type: Boolean, default: false },
+    //isPrivate: { type: Boolean, default: false },
     eventLocation:{
         eventVenue:{type:String},
         eventCity:{type:String},

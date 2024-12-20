@@ -469,11 +469,13 @@ app.post("/createVnt/:userID",async(req,res)=>{
   const {
     eventTitle,
     eventDesc,
-    eventDate,
+    eventStart,
+    eventEnd,
     eventType,
    // eventCapacity,
     maximumattedees,
-    //customTags,
+    StartTime,
+    EndTime,
     eventVenue,
     eventState,
     eventCity,
@@ -492,8 +494,8 @@ app.post("/createVnt/:userID",async(req,res)=>{
   // };
   
     // Date validation
-    const eventStart = new Date(eventDate?.eventStart);
-    const eventEnd = new Date(eventDate?.eventEnd);
+    //const eventStart = new Date(eventDate?.eventStart);
+    //const eventEnd = new Date(eventDate?.eventEnd);
     if (eventStart < new Date() || eventEnd <= new Date()) {
       return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
     }
