@@ -472,7 +472,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventStart,
     eventEnd,
     eventType,
-   // eventCapacity,
+   eventUrl,
     maximumattedees,
     StartTime,
     EndTime,
