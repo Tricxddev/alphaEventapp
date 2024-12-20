@@ -32,61 +32,14 @@ const {orgORGmodel,indiOrgModel,allUserModel}=require("./model/organizerDB")
 const sessionModel=require("./model/sessiosDB")
 const ticktModel=require("./model/ticketDb")
 const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
-const featuredEvnt=require("./routes/featuredEvntRout.js")
-const userInfo=require("./routes/userInfoRout.js")
-const userDetailUDT=require("./routes/updtUserDetailsRout.js")
-const newUser=require("./routes/newUserRout.js")
-const verifyUser=require("./routes/verifyUserRout.js")
-const confirmedToken=require("./routes/confirmTokRout.js")
-const alluserCount=require("./routes/allUSerCountRout.js")
-const login=require("./routes/loGinRout.js")
-const creatUserIndi=require("./routes/creatUSerRout.js")
-const creatUserOrg=require("./routes/creatOrgUsrRout.js")
-const creatEvent=require("./routes/creatEventRout.js")
-const eventDetails=require("./routes/eventDetailRout.js")
-const trendEvent=require("./routes/trendEventRout.js")
-const googleUnmFetch=require("./routes/googleUnamFetRout.js")
-const manualoGinUfetch=require("./routes/manualoGinRout.js")
-const utilityNmfetch=require("./routes/utilityNmfetRout.js")
-const ticketRevFetch=require("./routes/ticketRevRout.js")
-const totTikContDispFetch=require("./routes/totTikContDispRout.js")
-const tickzCrtFETCH=require("./routes/tickzCrtRout.js")
 //const landingFtPagination=require("./services/utilities")
 
 //CONFIGS
-// app.use('*',cors({
-//     origin:"http://localhost:5173",
-//     methods:["GET", "POST", "PUT", "DELETE"],
-//     credentials:true,
-//   }))
-// const allowedOrigins = ['http://localhost:5173', 'https://your-production-site.com'];
-// app.use(cors({
-//     origin: function (origin, callback) {
-//         if (!origin || allowedOrigins.includes(origin)) {
-//             callback(null, true);
-//         } else {
-//             callback(new Error('Not allowed by CORS'));
-//         }
-//     },
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true
-// }));
-// app.use((req, res, next) => {
-//   res.header("Access-Control-Allow-Origin", "http://localhost:5173"); // Replace with your frontend URL
-//   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-//   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-//   res.header("Access-Control-Allow-Credentials", "true"); // If using cookies/auth headers
-//   next();
-// });
-
-// app.use((req, res, next) => {
-//   console.log(`Request Origin: ${req.headers.origin}`);
-//   next();
-// });
-
-app.use(cors()); // Allow all origins
-
-
+app.use('*',cors({
+    origin:"http://localhost:5173",
+    methods:["GET", "POST", "PUT", "DELETE"],
+    credentials:true,
+  }))
 dotenv.config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
@@ -210,64 +163,595 @@ app.get('/auth/google/callback',
 );
 
 
-//FETCH USER INFO
-app.use('/API',userInfo) 
+
+app.get('/userInfo', async (req, res) => {
+  try {
+    // Retrieve the token from the Authorization header
+    const authHeader = req.headers.authorization;
+    // console.log(authHeader)
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, msg: 'Unauthorized access' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    
+
+    // Verify the token
+    const decoded = jwt.verify(token, process.env.refresTk);
+
+    //console.log(decoded)
+
+    // Use the decoded token to find the user
+    const user = await allUserModel.findOne({ email: decoded.email });
+
+    //console.log(user)
+
+    if (user) {
+      res.status(200).json({
+        msg: "SUCCESSFUL",
+        data:{
+        name: user.name,
+        email: user.email,}
+      });
+    } else {
+      res.status(404).json({ success: false, msg: 'User not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, msg: error.message });
+  }
+});
 
 app.get('/dashboard',ensureAuth,(req,res)=>{
   res.send(`hello,${req.user.displayName}`)
 })
 
 
-//UPDATE USER INFO
-app.use("/API",userDetailUDT)
+//CREATING  AN EVENT //EVENT ID,ORG ID YET TO BE GENERATED DUE TO CONCLUSION
+app.post("/updt%Passwd/:googleId",async(req,res)=>{
+  const{googleId}=req.params;
+  const{passWd}=req.body;
+  const findGUser= await o2authUser.findOne({googleId});
+  const email= await findGUser.email
+  const chckAllUser= await allUserModel.findOne({email})
+  if(!chckAllUser){
+    const hashPass= await bcrypt.hash(passWd,12)
+    const newUser= await allUserModel.create({
+      userID:new mongoose.Types.ObjectId(),
+      name:findUser.name,
+      email:email,
+      passWd:hashPass,
+      isEmailVerified:true,
+      lastLogin: new Date()      
+    })};
+  
+  res.redirect('/dashboard')
+})
 
-//NEW USER REQ
-app.use("/API",newUser)
 
-//VERIFY USER
-app.use("/API",verifyUser)
+app.post("/new&User",async(req,res)=>{
+try {
+  const {name,email,passWd}=req.body
+  const existinUser = await allUserModel.findOne({email})
+  const hashPass= await bcrypt.hash(passWd,12)
+  const generateOTpw= function(){
+    return  Math.floor(10000+Math.random()*90000)
+  };
+  if(existinUser){
+    return res.status(409).json({msg:"USER ALREADY EXIST"});
+  };
+  const nameCap= await name.toUpperCase()
+  const newUser= await allUserModel.create({
+    userID:new mongoose.Types.ObjectId(),
+    name:nameCap,
+    email,
+    verifyOTpw:generateOTpw(),
+    passWd:hashPass,
+    lastLogin: new Date()      
+  });
+  await indiOrgModel.create({
+    IndName:{
+            firstName: nameCap, 
+            lastName:  nameCap|| ''
+    },
+    phnCntkt:{
+      countryCd,
+      phnNum
+    },
+    address:"",
+    email,
+    userID:newUser.userID,
+    regDate:new Date(),
+    userFollow:[],
+    userFollowCnt:0,
+    crtdTketz:[],
+    crtdTketCnt:0,
+    totalEarning:0
+  })
+  if(!newUser)throw new Error("ERROR IN DATA SAVE");
+  //res.redirect('/dashboard');
+  //console.log("SUCCESSFUL");
+  res.status(200).json({
+  msg:"SUCCESSFUL"
+  });
+} catch (error){ return res.status(401).json({msg:error.message})
+}})
 
-//CONFIRM TOKEN
-app.use("/API",confirmedToken)
+app.get("/verifyUser/:userID",async(req,res)=>{
+  try {
+    const {userID}=req.params;
+    const verifyID= await allUserModel.findOne({userID});
+    if(!verifyID){
+      res.redirect('/new&User')
+    };
+    const veriName= await verifyID.name;
+    const veriToken= await verifyID.verifyOTpw;
+    const verifyMail= await verifyID.email
+    await verifyMailer(veriToken,veriName,verifyMail);
+
+    res.status(400).json({msg:"SUCCESSFUL"})
+  
+  } catch (error) {
+    return res.status(400).json({msg:error.message})
+  }
+
+})
+
+
+app.post("/confirmedToken/:userID",async(req,res)=>{
+  try{
+    const{userToken}=req.body;
+    const {userID}=req.params;
+    const verifyID= await allUserModel.findOne({userID});
+    if(!userToken){
+      res.status(403).json({msg:"OTP REQUIRED"})
+    };
+    const veriToken= await verifyID.verifyOTpw;
+    if(userToken===veriToken){
+      await allUserModel.findOneAndUpdate({userID},{isEmailVerified:true});
+      const sessionTokz=await jwt.sign({userID},`${process.env.accessTk}`,{expiresIn:"60m"})
+      //GENERATE SESSION ID
+      let sessionID
+      let isUnique= false
+      while(!isUnique){
+      sessionID= Math.floor(Math.random()*88888)
+      const findSess= await sessionModel.findOne({sessionID})
+      if(!findSess)isUnique=true
+      }
+      //SESSION DB UPDATE
+      const findUserid= await allUserModel.findOne({userID})
+      const refrshTokz=await jwt.sign({userID},`${process.env.refresTk}`,{expiresIn:"1m"})
+      await sessionModel.create({
+          sessionID:sessionID,
+          userID:findUserid,
+          sessToken:sessionTokz,
+          refrshTkn:refrshTokz
+      })
+      res.status(200).json({
+      msg:"SUCCESSFUL",
+      token:sessionTokz
+    })
+    }else{res.status(400).json({msg:"INVALID ACTION"})};
+    
+  }catch(error){return res.status(400).json({msg:error.message})}
+})
 
 //ALL USER COUNT
-app.use("/API",alluserCount)
-//LOGIN
-app.use("/API",login)
+app.get("/getalluserCont",async(req,res)=>{
+  const userCount=await allUserModel.countDocuments()
+  res.json(userCount)
+})
 
-//CREAT USER indORG
-app.use("/API",creatUserIndi)
+app.post("/loginUser",async(req,res)=>{
+  try{
+    const{email,passWd}=req.body
+    const existinUser = await allUserModel.findOne({email:email})
+    //console.log(req.body)
 
-//CREAT USER indORG
-app.use("/API",creatUserOrg)
+    if(!existinUser){
+      return res.status(403).json({msg:"ACCESSRR DENIED"})
+    };
+    const unHaspwd= await bcrypt.compare(passWd,existinUser.passWd)
+    if(!unHaspwd){
+      return res.status(403).json({msg:"ACCESS DENIED"})
+    }
+    const updlastLogin= await allUserModel.findOneAndUpdate(
+      {userID:existinUser.userID},
+      {lastLogin:new Date()},
+      {new:true})
+    const datexepl= await moment(updlastLogin.lastLogin).format('MMMM Do YYYY, h:mm:ss a')
+    res.status(200).json({
+      msg:"SUCCESSFUL",
+      userID:existinUser.userID,
+      name:existinUser.name,
+      lastLogin:datexepl
+    })
+  }catch(error){return res.status(400).json({msg:error.message})}
+
+})
+
+app.post("/creatIndioRg/:userID",async(req,res)=>{
+  try {
+    const {userID}=req.params;
+    const {firstName,lastName,countryCd,phnNum,address}=req.body
+    const existingUser=await indiOrgModel.findOne({userID});
+    if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:I"})}
+    const findUser=await allUserModel.findOne({userID});
+    const regdate=new  Date()
+    const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
+    //console.log(findUser)
+    // await indiOrgModel.collection.dropIndex("orgID_1"); // Drop the index by name to handle ID error encountered while in dev.
+    indiUserCreate= await indiOrgModel.create({
+      IndName:{
+        firstName:firstName.toUpperCase(),
+        lastName:lastName.toUpperCase()},
+      phnCntkt:{
+        countryCd,
+        phnNum},
+      address,
+      email:findUser.email,
+      userID:findUser.userID,
+      regDate:regdate,
+      userFollow:[],
+      userFollowCnt:0,
+      crtdTketz:[],
+      crtdTketCnt:0,
+      totalEarning:0})    
+  const updtRole= await allUserModel.findOneAndUpdate(
+    {userID:findUser.userID},
+    {role:"organizer"},
+    {new:true})
+
+  res.status(200).json({
+    msg:"SUCCESSFULL",
+    reaDate,
+    updtRole
+  })
+  } catch (error) {return res.status(400).json({msg:error.message})}  
+})
+
+
+
+app.post("/creat%ORGoRg/:userID",async(req,res)=>{
+  try {
+    const {userID}=req.params;
+    const {orgName,countryCd,phnNum,address}=req.body;
+    const existingUser=await orgORGmodel.findOne({userID});
+    if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:O"})};
+    const findUser=await allUserModel.findOne({userID});
+    const orgIdGen= async()=>{
+      let orgID
+      let isUnique= false
+      while(!isUnique){
+        const randMNo= await Math.floor( Math.random()*9999)
+        orgID=`ALVENT-${randMNo}-${new Date().getFullYear()}`
+        const idExist= await orgORGmodel.findOne({orgID});
+        if(!idExist) isUnique=true
+      };
+      return orgID
+    };
+    const newOrgID=await orgIdGen()
+    
+    const regdate=new  Date()
+    const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
+    orgORGUserCreate= await orgORGmodel.create({
+      orgName:orgName.toUpperCase(),
+      phnCntkt:{
+        countryCd,
+        phnNum},
+      address,
+      email:findUser.email,
+      userID:findUser.userID,
+      orgID:newOrgID,
+      regDate:regdate,
+      userFollow:[],
+      userFollowCnt:0,
+      crtdTketz:[],
+      crtdTketCnt:0,
+      totalEarning:0})
+
+  const updtRole= await allUserModel.findOneAndUpdate({
+    userID:findUser.userID},
+    {role:"organizer"},
+    {new:true});
+  //console.log(req)
+  res.status(200).json({
+    msg:"SUCCESSFULL",
+    reaDate,
+    orgORGUserCreate
+  })} catch (error) {return res.status(400).json({msg:error.message})}
+
+});
 
 //CREATE EVENT FOR BOTH IND AND ORG
-app.use("/API",creatEvent)
+app.post("/createVnt/:userID",async(req,res)=>{
+  try {
+  const {
+    eventTitle,
+    eventDesc,
+    eventDate,
+    eventType,
+   // eventCapacity,
+    maximumattedees,
+    //customTags,
+    eventVenue,
+    eventState,
+    eventCity,
+    eventCountry,
+    tickeType,
+    eventImgURL,
+    ticketPrice }=req.body;
+  console.log(req.body)
+  const {userID}=req.params
+  if(
+    !eventTitle||
+    !eventDesc||
+    !eventDate ||
+    !eventType||
+    !tickeType){
+    return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
+  };
+  
+    // Date validation
+    const eventStart = new Date(eventDate?.eventStart);
+    const eventEnd = new Date(eventDate?.eventEnd);
+    if (eventStart < new Date() || eventEnd <= new Date()) {
+      return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
+    }
 
-  //FETCH FEATURED EVENT
-  app.use("/API",featuredEvnt)
-//FETCH EVENT DETAILS
-  app.use("/API",eventDetails)
+  
+ const findUser = await allUserModel.findOne({ userID });
+    if (!findUser) {
+      return res.status(400).json({ msg: "UNKNOWN USER" });
+    }
+  const {nanoid}= await  import('nanoid');
+  const conVTitle= await eventTitle.toUpperCase()
+  const createDT= new Date().toISOString().replace(/[-:.TZ]/g, '')
+  const findORGID=await orgORGmodel.findOne({userID})
 
-//FETCH TRENDING EVENT
-  app.use("/API",trendEvent)
+  const genEvntID= async()=>{
+    if(findORGID){
+       spltORGNm= findORGID.orgName.slice(0,3).toUpperCase()
+       return  `${spltORGNm}-${createDT}-${nanoid(5)}`;
+    }else{
+      //if(!findORGID){
+       return `ALV-${createDT}-${nanoid(5)}`;
+    }}
+
+  const useORGID = findORGID ? findORGID.userID :null;
+
+   const newEvent = await eventModel.create({
+    eventID:await genEvntID(),
+    eventTitle:conVTitle,
+    eventImgURL,
+    eventDesc,
+    eventDate:{
+      eventStart,
+      eventEnd},
+      startTime,
+      endTime,
+    eventType,
+    eventUrl,
+    eventLocation:{
+      eventVenue,
+      eventCity,
+      eventState,
+      eventCountry},
+    //isPrivate,
+    maximumattedees,
+    //eventCapacity,
+    //customTags: customTags?.split(","),
+    orgID: useORGID,
+    userID:findUser.userID,
+    tickeType,
+    ticketPrice
+  })
+  res.status(200).json({
+    msg:"SUCCESSFUL",
+    newEvent
+  })} catch (error) {return res.status(400).json({msg:error.message})}});
+
+  //GET EVENT
+  app.use("/API",)
+
+  app.get("/eventDetails/:eventID",async(req,res)=>{
+    try {
+      const {eventID}=req.params
+      //console.log("eventID:",eventID)
+      const evnttd= await eventModel.findOne({eventID})
+      if (!evnttd) {
+        return res.status(404).json({ msg: "Event not found" });
+      }
+     // console.log("eventID:",evnttd)
+      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY, h:mm:ss a");
+      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY, h:mm:ss a");
+
+      const userId = evnttd.userID;
+      let organizerName = "Unknown Organizer";
+      //console.log("userID:",userId)
+
+      if (userId) {
+        const organizer = await allUserModel.findOne({ userId });
+        organizerName = organizer?.name || "Unknown Organizer";
+      }
+      const evnttyWithOrgNames = {
+        ...evnttd._doc, // Spread the event document fields
+        organizerName,
+        eventStart: formattedEventStart,
+        eventEnd: formattedEventEnd,
+      };
+      
+      res.status(200).json({
+        msg:"SUCCESSFUL",
+        evnttd:evnttyWithOrgNames
+      })
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  });
+//yet to implement
+  app.get("/trndeventAllGet",async(req,res)=>{
+    try {
+      const {limit}=landingtrdPagination(req)
+      const evntty= await eventModel.find().limit(limit)
+      const userIds = evntty.map((event) => event.userID);
+      const orgZ = await allUserModel.find({ userID: { $in: userIds } });
+          // Create a mapping of userID to organizer name for quick lookup
+      const organizerMap = orgZ.reduce((map, organizer) => {
+      map[organizer.userID] = organizer.name;
+      return map;
+    }, {});
+
+    const evnttyWithOrgNames = evntty.map((event) => ({
+      ...event._doc, // Spread event document fields
+      organizerName: organizerMap[event.userID] || "Unknown Organizer",
+    }));
+
+      //console.log(evnttyWithOrgNames)
+      
+      res.status(200).json({
+        msg:"SUCCESSFUL",
+        evntty:evnttyWithOrgNames
+      })
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  })
 
   //GET USER NAME FOR GOOGLE AUTH PURPOSE
-  app.use("/API",googleUnmFetch)
-
+  app.get("/userNameFetch/",async(req,res)=>{
+    const{email}=req.query
+    const finduser= await allUserModel.findOne({email});
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      userName:finduser.name
+    })
+  })
   //FETCH USER NAME AFTER MANUAL LOGIN
-  app.use("/API",manualoGinUfetch)
+  app.get("/userNameMFetch/:userEmail",async(req,res)=>{
+    const{userEmail}=req.params
+    const finduser= await allUserModel.findOne({email:userEmail});
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      name:finduser.name
+    })
+  });
 //UTILITY FOR OTHER USE
-  app.use("/API",utilityNmfetch),
+  app.get("/userNamFetch/:userEmail",async(req,res)=>{
+    const{userEmail}=req.params
+
+    const finduser= await allUserModel.findOne({email:userEmail});
+    //console.log(req.params)
+    //console.log("USERFOUND:",finduser)
+    
+    return res.status(200).json({
+      msg:"SUCCESSFUL",
+      data:finduser
+    })
+  })
   //GET TICKET REVENUE
-  app.use('/API',ticketRevFetch)
+  app.get('/orGTicketRev/:userEmail',async(req,res)=>{
+    const{userEmail}=req.params
+    
+    try {
+      // Search in indiOrgModel
+      const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
+     // console.log("userEmail:",findIndiUser)
+
+      if (findIndiUser) {
+        console.log("found in indUser")
+        return res.status(200).json({
+          msg: "SUCCESSFUL",
+          totalRevenue: findIndiUser.totalEarning
+        })}else{console.log("found in Orguser")}
+
+      // Search in orgORGmodel
+      const findOrgUser = await orgORGmodel.findOne({ email: userEmail });
+  
+      if (findOrgUser) {
+        console.log("found in Orguser")
+        return res.status(200).json({
+          msg: "SUCCESSFUL",
+          totalRevenue: findOrgUser.totalEarning
+        })}else{console.log("found in indUser")}
+      
+  
+      // If no user found in either model
+      return res.status(404).json({
+        msg: "User not found"
+      });
+  
+    } catch (error) {
+      console.error("Error fetching ticket revenue:", error);
+      return res.status(500).json({
+        msg: "Server Error",
+        error: error.message,
+      });}
+  });
 
   //GET TOTAL TICKET COUNT ORGANIZER WISE
-  app.use('/API',totTikContDispFetch)
+  app.get('/totTikContDisp/:userEmail',async(req,res)=>{
+    try{
+    const{userEmail}=req.params
+    //const findUserMail= await allUserModel.findOne({email:userEmail})
+    const findUserId= "6737745be3d1857286917723"//await findUserMail.userID
+    const ticketsSold= await ticktModel.countDocuments({orgID:findUserId})
+    
+    res.status(200).json({
+      msg:"SUCCESSFULL",
+      ticketsSold
+    })}catch(error){res.status(400).json({msg:error.message})}
+
+  })
+
 
 
 //TICKETING
-  app.post("/API",tickzCrtFETCH)
+  app.post("/tickzCrt/:eventID",async(req,res)=>{
+    try {
+      const{eventID}=req.params;
+     // console.log("ticketeventid:",eventID)
+    if(!eventID){
+      return res.status(400).json({msg:"Event ID is required"})
+    }
+
+    const {nanoid}= await  import('nanoid');
+    const findevntID= await eventModel.findOne({eventID})
+    if(!findevntID){
+      res.status(400).json({msg:"UNKNOWN ACTION"})  
+    };
+    const findORGID=await orgORGmodel.findOne({orgID:findevntID.orgID})
+    //console.log(findevntID)
+    const useID= findORGID? findORGID.userID :null;
+
+    const genTicketID= async()=>{
+      if(findORGID){
+        const spltORGNm= findORGID.orgName.slice(0,3).toUpperCase()
+        return  `${spltORGNm}-${nanoid(7).toUpperCase()}`;
+      }else{
+         return  `ALV-${nanoid(7).toUpperCase()}`;
+      }}
+
+      const idUserEVNT= findevntID.userID;
+      const idTicktType=findevntID.tickeType;
+      const ticktPRICe=findevntID.ticketPrice;
+      const ticketID= await genTicketID()
+
+      //console.log(ticketID)
+
+     const newTicket = new ticktModel({
+      ticketID:ticketID,
+      eventID:findevntID.eventID,
+      orgID:useID,
+      userId:idUserEVNT.userID,
+      tickeType:idTicktType,
+      ticketPrice:ticktPRICe,
+      purchaseDate: new Date()
+    })
+
+    await newTicket.save()
+    res.status(200).json({
+      msg:"SUCESSFULL",
+      newTicket
+    })      
+    } catch (error) {return res.status(400).json({msg:error.message})}
+  })
 
 
 //STRIPE API
@@ -290,7 +774,7 @@ app.post("/create-payment-intent", async (req, res) => {
       metadata: { eventID },
     });
 
-    res.json({ clientSecret: paymentIntent.process.env.client_secret });
+    res.json({ clientSecret: paymentIntent.client_secret });
   } catch (error) {
     res.status(500).json({ msg: error.message });
   }
