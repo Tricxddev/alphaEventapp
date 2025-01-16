@@ -226,7 +226,7 @@ app.post("/updt%Passwd/:googleId",async(req,res)=>{
     })};
   
   res.redirect('/dashboard')
-})
+});
 
 
 app.post("/new&User",async(req,res)=>{
@@ -255,8 +255,8 @@ try {
             lastName:  nameCap|| ''
     },
     phnCntkt:{
-      countryCd,
-      phnNum
+      countryCd:"",
+      phnNum:""
     },
     address:"",
     email,
@@ -275,7 +275,7 @@ try {
   msg:"SUCCESSFUL"
   });
 } catch (error){ return res.status(401).json({msg:error.message})
-}})
+}});
 
 app.get("/verifyUser/:userID",async(req,res)=>{
   try {
@@ -472,7 +472,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventStart,
     eventEnd,
     eventType,
-   eventUrl,
+    eventUrl,
     maximumattedees,
     StartTime,
     EndTime,

@@ -23,8 +23,8 @@ const indiOrgSchema= new mongoose.Schema({
         firstName:{type:String,required:true},
         lastName:{type:String}},//name of individual as an organizer
     phnCntkt:{
-        countryCd:{type:String,required:true,enum:["+1","+44","+91","+234"]},
-        phnNum:{type:String,required:true,minlenght:8,maxlenght:11}},//phone details of organizer
+        countryCd:{type:String/*,enum:["+1","+44","+91","+234"]*/},
+        phnNum:{type:String,minlenght:8,maxlenght:11}},//phone details of organizer
     address:{type:String},//organizer address
     email:{type:String,required:true},//email details of organizer
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
