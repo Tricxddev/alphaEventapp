@@ -67,8 +67,13 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.gcallbackURL
 
 },async(accessToken,refreshToken,profile,done)=>{
+  console.log("Access Token:", accessToken);
+    console.log("Refresh Token:", refreshToken);
+    console.log("Profile:", profile);
 
-
+    if (!profile) {
+      return done(null, false, { message: "No profile returned from Google." });
+  }
          // Log the raw profile data received from Google
          //console.log("Google Profile Data:", profile);
 
