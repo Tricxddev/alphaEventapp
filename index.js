@@ -148,7 +148,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 
 // Google OAuth callback route
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: 'http://localhost:5173/LogIn' }),
+  passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
     const user=req.user;
     const token = jwt.sign(
