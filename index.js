@@ -114,10 +114,10 @@ passport.use(new GoogleStrategy({
               lastName: profile.displayName?.split(' ')[1] || ''
       },
       phnCntkt:{
-        countryCd,
-        phnNum
+        countryCd:'',
+        phnNum:''
       },
-      address:"",
+      address:'',
       email:profile.emails[0].value,
       userID:newUser.userID,
       regDate:new Date(),
@@ -155,7 +155,9 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
+    try {
     const user=req.user;
+    if (!user) throw new Error('User authentication failed.');
     const token = jwt.sign(
       { email: user.email },
       process.env.refresTk,
@@ -164,6 +166,10 @@ app.get('/auth/google/callback',
     // Successful authentication, redirect to your desired route
    res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
    // res.redirect('/updt%Passwd/:googleId');
+  } catch (error) {
+    console.error('Authentication error:', error);
+    res.redirect('/');
+  }
   }
 );
 
@@ -528,29 +534,29 @@ app.post("/createVnt/:userID",async(req,res)=>{
 
    const newEvent = await eventModel.create({
     eventID:await genEvntID(),
-    eventTitle,
-    eventImgURL,
-    eventDesc,
+    eventTitle:"",
+    eventImgURL:"",
+    eventDesc:"",
     eventDate:{
-      eventStart,
-      eventEnd},
-      StartTime,
-      EndTime,
-    eventType,
-    eventUrl,
+      eventStart:"",
+      eventEnd:""},
+      StartTime:"",
+      EndTime:"",
+    eventType:"",
+    eventUrl:"",
     eventLocation:{
-      eventVenue,
-      eventCity,
-      eventState,
-      eventCountry},
+      eventVenue:"",
+      eventCity:"",
+      eventState:"",
+      eventCountry:""},
     //isPrivate,
-    maximumattedees,
+    maximumattedees:0,
     //eventCapacity,
     //customTags: customTags?.split(","),
     orgID: useORGID,
     userID:findUser.userID,
-    tickeType,
-    ticketPrice
+    tickeType:"",
+    ticketPrice:0,
   })
   res.status(200).json({
     msg:"SUCCESSFUL",
