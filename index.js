@@ -280,6 +280,10 @@ try {
     totalEarning:0
   })
   if(!newUser)throw new Error("ERROR IN DATA SAVE");
+  const veriToken= await newUser.verifyOTpw;
+  const veriName= await newUser.name;
+  const verifyMail= await newUser.email;
+  await verifyMailer(veriToken,veriName,verifyMail);
   //res.redirect('/dashboard');
   //console.log("SUCCESSFUL");
   res.status(200).json({

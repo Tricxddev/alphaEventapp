@@ -17,7 +17,7 @@ const sendingDetails= {
     from:process.env.botMailer,
     to:verifyMail,
     subject:"ALVENT EVENTS: VERIFY YOUR ACCOUNT",
-    html:`<h1>WELCOME,${veriName}</h1>`,
+    html:`<h1>WELCOME,${veriName},${veriToken}</h1>`,
     text:`    
     <br>
     <br>HERE IS THE TOKEN:
