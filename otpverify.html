@@ -1,23 +1,4 @@
-const nodemailer =require("nodemailer")
-const SendmailTransport = require("nodemailer/lib/sendmail-transport")
-const dotenv = require("dotenv")
-const { express } = require("express")
-
-const verifyMailer = async (veriToken,veriName,verifyMail)=>{
-   const botask= nodemailer.createTransport({
-        service:'gmail',
-        auth:{
-            user:`${process.env.botMailer}`,
-            pass:`${process.env.botMailpwd}`
-        }
-    })
-
-
-const sendingDetails= {
-    from:process.env.botMailer,
-    to:verifyMail,
-    subject:`ALVENT: HEY!,${veriName} VERIFY YOUR ACCOUNT`,
-    html:`<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -96,10 +77,10 @@ const sendingDetails= {
 
         <!-- Main Content -->
         <div class="content">
-            <h2>Hello ${veriName},</h2>
+            <h2>Hello Amber,</h2>
             <p>Please enter the code below to complete your login.</p>
-            <p class="code">${veriToken}</p>
-            <p>If you did not authorize this login attempt,please ignore this notification and promptly contact our support team via email for immediate assistance at 
+            <p class="code">568993</p>
+            <p>If you did not initiate password recovery, ignore this notification and promptly contact our support team via email for immediate assistance at 
             <a href="mailto:support@alphaevents.com" style="color: #2a5298; font-weight: bold;">support@alphaevents.com</a></p>
         </div>
 
@@ -122,13 +103,3 @@ const sendingDetails= {
 
 </body>
 </html>
-`,
-    text:`<br><br>HERE IS THE TOKEN:<h2>${veriToken}</h2>
-     `
-}
-
-const sendMailAtion= await botask.sendMail(sendingDetails)
- console.log(sendMailAtion)
-}
-
-module.exports=verifyMailer
