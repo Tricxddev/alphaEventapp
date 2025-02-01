@@ -35,11 +35,12 @@ const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
 //const landingFtPagination=require("./services/utilities")
 
 //CONFIGS
-app.use('*',cors({
-    origin:"http://localhost:5173",
-    methods:["GET", "POST", "PUT", "DELETE"],
-    credentials:true,
-  }))
+// app.use('*',cors({
+//     origin:"http://localhost:5173",
+//     methods:["GET", "POST", "PUT", "DELETE"],
+//     credentials:true,
+//   }))
+app.use(cors());
 dotenv.config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
@@ -500,17 +501,9 @@ app.post("/createVnt/:userID",async(req,res)=>{
     ticketPrice }=req.body;
   console.log(req.body)
   const {userID}=req.params
-  // if(
-  //   !eventTitle||
-  //   !eventDesc||
-  //   !eventType||
-  //   !tickeType){
-  //   return res.status(400).json({msg:"FILL EMPTY FORMS!!!"})
-  // };
+
   
-    // Date validation
-    //const eventStart = new Date(eventDate?.eventStart);
-    //const eventEnd = new Date(eventDate?.eventEnd);
+ 
     if (eventStart < new Date() || eventEnd <= new Date()) {
       return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
     }
