@@ -529,19 +529,16 @@ app.post("/createVnt/:userID",async(req,res)=>{
        return `ALV-${createDT}-${nanoid(5)}`;
     }}
   
-  const formattedEventStart = moment(eventStart).format("MMMM Do YYYY, h:mm:ss a");
-  const formattedEventEnd = moment(eventEnd).format("MMMM Do YYYY, h:mm:ss a");
-
   const useORGID = findORGID ? findORGID.userID :null;
 
-   const newEvent = await new eventModel({
+   const newEvent = new eventModel({
     eventID:await genEvntID(),
     eventTitle,
     eventImgURL,
     eventDesc,
     eventDate:{
-      eventStart:formattedEventStart,
-      eventEnd:formattedEventEnd},
+      eventStart,
+      eventEnd},
       //StartTime:"",
       //EndTime:"",
     eventType,
