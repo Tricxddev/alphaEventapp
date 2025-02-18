@@ -7,13 +7,13 @@ const eventSchema = new mongoose.Schema({
     eventImgURL:{type:String},
     eventDesc:{type:String},
     eventDate:{
-        eventStart:{type:Date,required:true,default:Date.now},
-        eventEnd:{type:Date,required:true,default:Date.now}
+        eventStart:{type:Date,required:true/*,default:Date.now*/},
+        eventEnd:{type:Date,required:true}
     },
-    EndTime:{type: String},
-    StartTime:{type: String},
+   // EndTime:{type: String},
+   // StartTime:{type: String},
     //eventCat:{type: String},
-    eventType:{type:String,required:true/*,enum:["Physical","Online"]*/},
+    eventType:{type:String,required:true},
     //isPrivate: { type: Boolean, default: false },
     eventLocation:{
         eventVenue:{type:String},
@@ -21,14 +21,14 @@ const eventSchema = new mongoose.Schema({
         eventState:{type:String},
         eventCountry:{type:String},
         },
-    /*eventUrl:{type:String},*/
+    url:{type:String},
     //accessibilityOption:{type:String},
     maximumAttendees:{type:Number,default:0},
     //customTags: [{ type: String }], 
     /*orgID:{type:mongoose.Schema.Types.ObjectId,ref:"orgORGmodel"},*/
     /*userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},*/
-    ticketPrice:{type:Number,default:0},
-    tickeType:{type:String,required:true/*,enum:["others","Vip"]*/},
+   // ticketPrice:{type:Number,default:0},
+    tickeType:{type:String,required:true},
     /*eventCapacity:{type:Number,default:0},*/
     /*eventTicketSold:{type:Number,default:0},*/
     /*eventTicketCount:{type:Number,default:0},*///not updated in all db
