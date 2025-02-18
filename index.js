@@ -39,7 +39,7 @@ const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
 //     origin:"http://localhost:5173",
 //     methods:["GET", "POST", "PUT", "DELETE"],
 //     credentials:true,
-//   }))
+//  }))
 app.use(cors());
 dotenv.config()
 app.use(express.json())
@@ -488,19 +488,20 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventStart,
     eventEnd,
     eventType,
-    eventUrl,
-    maximumattedees,
-    StartTime,
-    EndTime,
+    url,
+    maximumAttendees,
+    //StartTime,
+    //EndTime,
     eventVenue,
     eventState,
     eventCity,
     eventCountry,
     tickeType,
     eventImgURL,
-    ticketPrice }=req.body;
-  console.log(req.body)
-  const {userID}=req.params
+    //ticketPrice 
+  }=req.body;
+  console.log('request body:',req.body)
+  const {userID}=req.params;
 
   
  
@@ -513,6 +514,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
     if (!findUser) {
       return res.status(400).json({ msg: "UNKNOWN USER" });
     }
+  
   const {nanoid}= await  import('nanoid');
   //const conVTitle= await eventTitle.toUpperCase()
   const createDT= new Date().toISOString().replace(/[-:.TZ]/g, '')
@@ -526,35 +528,42 @@ app.post("/createVnt/:userID",async(req,res)=>{
       //if(!findORGID){
        return `ALV-${createDT}-${nanoid(5)}`;
     }}
+  
 
   const useORGID = findORGID ? findORGID.userID :null;
 
-   const newEvent = await eventModel.create({
+   const newEvent = await new eventModel({
     eventID:await genEvntID(),
-    eventTitle:"",
-    eventImgURL:"",
-    eventDesc:"",
+    eventTitle,
+    eventImgURL,
+    eventDesc,
     eventDate:{
-      eventStart:"",
-      eventEnd:""},
-      StartTime:"",
-      EndTime:"",
-    eventType:"",
-    eventUrl:"",
+      eventStart,
+      eventEnd},
+      //StartTime:"",
+      //EndTime:"",
+    eventType,
+    url,
     eventLocation:{
-      eventVenue:"",
-      eventCity:"",
-      eventState:"",
-      eventCountry:""},
+      eventVenue,
+      eventCity,
+      eventState,
+      eventCountry},
     //isPrivate,
-    maximumattedees:0,
+    maximumAttendees:Number(maximumAttendees),
     //eventCapacity,
     //customTags: customTags?.split(","),
     orgID: useORGID,
     userID:findUser.userID,
-    tickeType:"",
-    ticketPrice:0,
+    tickeType,
+    //ticketPrice:0
   })
+
+ const saveDtat= await newEvent.save();
+
+ if(!saveDtat){
+   console.log("ERROR IN DATA SAVE");
+  }
   res.status(200).json({
     msg:"SUCCESSFUL",
     newEvent
