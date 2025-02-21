@@ -165,7 +165,8 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
+   //res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
+   res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
    // res.redirect('/updt%Passwd/:googleId');
   } catch (error) {
     console.error('Authentication error:', error);
@@ -244,14 +245,20 @@ app.post("/updt%Passwd/:googleId",async(req,res)=>{
 app.post("/new&User",async(req,res)=>{
 try {
   const {name,email,passWd}=req.body
+  console.log('PAYLOAD:',req.body)
   const existinUser = await allUserModel.findOne({email})
   const hashPass= await bcrypt.hash(passWd,12)
   const generateOTpw= function(){
-    return  Math.floor(10000+Math.random()*90000)
+    return  Math.floor(100000+Math.random()*90000)
   };
   if(existinUser){
     return res.status(409).json({msg:"USER ALREADY EXIST"});
   };
+  const token = jwt.sign(
+    { email: email },
+    process.env.refresTk,
+    { expiresIn: '1h' },
+  )
   const nameCap= await name.toUpperCase()
   const newUser= await allUserModel.create({
     userID:new mongoose.Types.ObjectId(),
@@ -285,11 +292,12 @@ try {
   const veriName= await newUser.name;
   const verifyMail= await newUser.email;
   await verifyMailer(veriToken,veriName,verifyMail);
-  //res.redirect('/dashboard');
+ // res.redirect(`/http://localhost:5173/VerifyAcc/?token=${token}`);
+  res.redirect(`/https://alvent.netlify.app/VerifyAcc/?token=${token}`);
   //console.log("SUCCESSFUL");
-  res.status(200).json({
-  msg:"SUCCESSFUL"
-  });
+  // res.status(200).json({
+  // msg:"SUCCESSFUL"
+  // });
 } catch (error){ return res.status(401).json({msg:error.message})
 }});
 
