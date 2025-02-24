@@ -68,9 +68,9 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.gcallbackURL
 
 },async(accessToken,refreshToken,profile,done)=>{
-  console.log("Access Token:", accessToken);
-    console.log("Refresh Token:", refreshToken);
-    console.log("Profile:", profile);
+  // console.log("Access Token:", accessToken);
+  //   console.log("Refresh Token:", refreshToken);
+  //   console.log("Profile:", profile);
 
     if (!profile) {
       return done(null, false, { message: "No profile returned from Google." });
@@ -165,8 +165,8 @@ app.get('/auth/google/callback',
       { expiresIn: '1h' },
     );
     // Successful authentication, redirect to your desired route
-   //res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
-   res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
+   res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
+  //  res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
    // res.redirect('/updt%Passwd/:googleId');
   } catch (error) {
     console.error('Authentication error:', error);
@@ -245,7 +245,8 @@ app.post("/updt%Passwd/:googleId",async(req,res)=>{
 app.post("/new&User",async(req,res)=>{
 try {
   const {name,email,passWd}=req.body
-  console.log('PAYLOAD:',req.body)
+  // console.log('PAYLOAD:',req.body)
+  // console.log(typeof(passWd))
   const existinUser = await allUserModel.findOne({email})
   const hashPass= await bcrypt.hash(passWd,12)
   const generateOTpw= function(){
@@ -259,24 +260,26 @@ try {
     process.env.refresTk,
     { expiresIn: '1h' },
   )
+  const OtpGen= await generateOTpw()
+  const OtpGenStr = OtpGen.toString();
+  const hashOtp = await bcrypt.hash(OtpGenStr, 6);
   const nameCap= await name.toUpperCase()
   const newUser= await allUserModel.create({
     userID:new mongoose.Types.ObjectId(),
     name:nameCap,
     email,
-    verifyOTpw:generateOTpw(),
+   // verifyOTpw:generateOTpw(),
+    verifyOTpw:hashOtp,
     passWd:hashPass,
     lastLogin: new Date()      
   });
   await indiOrgModel.create({
     IndName:{
             firstName: nameCap, 
-            lastName:  nameCap|| ''
-    },
+            lastName:  nameCap|| ''},
     phnCntkt:{
       countryCd:"",
-      phnNum:""
-    },
+      phnNum:""},
     address:"",
     email,
     userID:newUser.userID,
@@ -291,15 +294,32 @@ try {
   const veriToken= await newUser.verifyOTpw;
   const veriName= await newUser.name;
   const verifyMail= await newUser.email;
-  await verifyMailer(veriToken,veriName,verifyMail);
- // res.redirect(`/http://localhost:5173/VerifyAcc/?token=${token}`);
-  res.redirect(`/https://alvent.netlify.app/VerifyAcc/?token=${token}`);
+  await verifyMailer(OtpGen,veriName,verifyMail);
+  //res.redirect(`http://localhost:5173/VerifyAc/?token=${token}`);
+  //res.redirect(`/https://alvent.netlify.app/VerifyAcc/?token=${token}`);
   //console.log("SUCCESSFUL");
-  // res.status(200).json({
-  // msg:"SUCCESSFUL"
-  // });
+  res.status(200).json({
+  msg:"SUCCESSFUL"
+  });
 } catch (error){ return res.status(401).json({msg:error.message})
 }});
+
+app.post("/verifyOTp/:userEmail",async(req,res)=>{
+  const{userEmail}=req.params;
+  const{verificationCode}=req.body;
+  const findUser= await allUserModel.findOne({email:userEmail})
+  if(!findUser){
+    return res.status(403).json({msg:"INVALID USER"})
+  };
+  const findToken= await findUser.verifyOTpw;
+  const compOtp= await bcrypt.compare(verificationCode,findToken)
+  if(!compOtp){
+    return res.status(403).json({msg:"INVALID OTP"})
+  }
+  await allUserModel.findOneAndUpdate({email:userEmail},{isEmailVerified:true})
+  res.status(200).json({msg:"SUCCESSFUL"})})
+
+
 
 app.get("/verifyUser/:userID",async(req,res)=>{
   try {
@@ -370,10 +390,10 @@ app.post("/loginUser",async(req,res)=>{
   try{
     const{email,passWd}=req.body
     const existinUser = await allUserModel.findOne({email:email})
-    //console.log(req.body)
+    //console.log('payloadPPP:',req.body)
 
     if(!existinUser){
-      return res.status(403).json({msg:"ACCESSRR DENIED"})
+      return res.status(403).json({msg:"ACCESS DENIED"})
     };
     const unHaspwd= await bcrypt.compare(passWd,existinUser.passWd)
     if(!unHaspwd){
@@ -382,10 +402,17 @@ app.post("/loginUser",async(req,res)=>{
     const updlastLogin= await allUserModel.findOneAndUpdate(
       {userID:existinUser.userID},
       {lastLogin:new Date()},
-      {new:true})
+      {new:true});
+      const token = jwt.sign(
+        { email: email },
+        process.env.refresTk,
+        { expiresIn: '1h' },
+      );
+  
     const datexepl= await moment(updlastLogin.lastLogin).format('MMMM Do YYYY, h:mm:ss a')
     res.status(200).json({
       msg:"SUCCESSFUL",
+      token,
       userID:existinUser.userID,
       name:existinUser.name,
       lastLogin:datexepl
@@ -508,7 +535,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventImgURL,
     //ticketPrice 
   }=req.body;
-  console.log('request body:',req.body)
+  //console.log('request body:',req.body)
   const {userID}=req.params;
 
   
@@ -680,7 +707,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
      // console.log("userEmail:",findIndiUser)
 
       if (findIndiUser) {
-        console.log("found in indUser")
+        //console.log("found in indUser")
         return res.status(200).json({
           msg: "SUCCESSFUL",
           totalRevenue: findIndiUser.totalEarning
@@ -690,7 +717,7 @@ app.post("/createVnt/:userID",async(req,res)=>{
       const findOrgUser = await orgORGmodel.findOne({ email: userEmail });
   
       if (findOrgUser) {
-        console.log("found in Orguser")
+        //console.log("found in Orguser")
         return res.status(200).json({
           msg: "SUCCESSFUL",
           totalRevenue: findOrgUser.totalEarning

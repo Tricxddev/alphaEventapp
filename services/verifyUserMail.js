@@ -3,7 +3,7 @@ const SendmailTransport = require("nodemailer/lib/sendmail-transport")
 const dotenv = require("dotenv")
 const { express } = require("express")
 
-const verifyMailer = async (veriToken,veriName,verifyMail)=>{
+const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
    const botask= nodemailer.createTransport({
         service:'gmail',
         auth:{
@@ -98,7 +98,7 @@ const sendingDetails= {
         <div class="content">
             <h2>Hello ${veriName},</h2>
             <p>Please enter the code below to complete your login.</p>
-            <p class="code">${veriToken}</p>
+            <p class="code">${OtpGen}</p>
             <p>If you did not authorize this login attempt,please ignore this notification and promptly contact our support team via email for immediate assistance at 
             <a href="mailto:support@alphaevents.com" style="color: #2a5298; font-weight: bold;">support@alphaevents.com</a></p>
         </div>
@@ -123,12 +123,12 @@ const sendingDetails= {
 </body>
 </html>
 `,
-    text:`<br><br>HERE IS THE TOKEN:<h2>${veriToken}</h2>
+    text:`<br><br>HERE IS THE TOKEN:<h2>${OtpGen}</h2>
      `
 }
 
 const sendMailAtion= await botask.sendMail(sendingDetails)
- console.log(sendMailAtion)
+ //console.log(sendMailAtion)
 }
 
 module.exports=verifyMailer
