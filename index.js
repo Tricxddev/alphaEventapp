@@ -35,12 +35,17 @@ const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
 //const landingFtPagination=require("./services/utilities")
 
 //CONFIGS
-app.use('*',cors({
-    origin:"http://localhost:5173",
-    methods:["GET", "POST", "PUT", "DELETE"],
-    credentials:true,
- }))
-//app.use(cors());
+const corsOptions = {
+  origin: ['http://localhost:5173'], // Add your frontend URLs here
+  methods:["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+};
+// app.use('*',cors({
+//     origin:"http://localhost:5173",
+//     methods:["GET", "POST", "PUT", "DELETE"],
+//     credentials:true,
+//  }))
+app.use(cors(corsOptions));
 dotenv.config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
