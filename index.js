@@ -390,14 +390,14 @@ app.post("/loginUser",async(req,res)=>{
   try{
     const{email,passWd}=req.body
     const existinUser = await allUserModel.findOne({email:email})
-    //console.log('payloadPPP:',req.body)
+    console.log('payloadPPP:',req.body)
 
     if(!existinUser){
-      return res.status(403).json({msg:"ACCESS DENIED"})
+      return res.status(403).json({msg:"NEW USER? GO TO SIGNUP"})
     };
     const unHaspwd= await bcrypt.compare(passWd,existinUser.passWd)
     if(!unHaspwd){
-      return res.status(403).json({msg:"ACCESS DENIED"})
+      return res.status(403).json({msg:"ACCESS UNKNOWN"})
     }
     const updlastLogin= await allUserModel.findOneAndUpdate(
       {userID:existinUser.userID},
