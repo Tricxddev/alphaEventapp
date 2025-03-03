@@ -34,7 +34,7 @@ const ticktModel=require("./model/ticketDb")
 const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
 //const landingFtPagination=require("./services/utilities")
 
-CONFIGS
+//CONFIGS
 app.use('*',cors({
     origin:"http://localhost:5173",
     methods:["GET", "POST", "PUT", "DELETE"],
