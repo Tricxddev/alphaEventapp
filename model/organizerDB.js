@@ -1,4 +1,6 @@
 const mongoose =require("mongoose")
+const bcrypt= require("bcrypt")
+const crypto = require("crypto");
 
 //SCHEMA & MODEL OF ALL USERS_DB
 const allUserSchema= new mongoose.Schema({
@@ -9,13 +11,27 @@ const allUserSchema= new mongoose.Schema({
     passWd:{type:String},
     role:{type:String,enum:["attendee","organizer","admin","none"],default:"none"},
     accntStatus:{type:String,enum:["active","suspended"],default:"active"},
-    verifyOTpw:{type:String},
+   // verifyOTpw:{type:String},
+    restpasswordOTP: { type: String },
+    restpasswordOTP_Expires: { type: Date },
     profilePic:{type:String},
     lastLogin:{type:Date},
     isEmailVerified:{type:Boolean,default:false}
 },{timestamps:true})
- const allUserModel= new mongoose.model("allUserModel",allUserSchema)
 
+
+
+//  allUserSchema.methods.generateOTP = function () {
+//     const otp = crypto.randomInt(100000, 999999).toString(); // Generate 6-digit OTP
+//     this.restpasswordOTP = otp; // Store OTP in user schema
+//     this.restpasswordOTP_Expires = Date.now() + 10 * 60 * 1000; // 10 minutes expiry
+//     console.log("Schemacrto",otp)
+//     return otp; // Return OTP
+   
+//   };
+
+  
+  const allUserModel= new mongoose.model("allUserModel",allUserSchema)
 
 //SCHEMA & MODEL FOR INDIVIDUAL AS AN ORGANIZER
 const indiOrgSchema= new mongoose.Schema({

@@ -36,7 +36,7 @@ const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
 
 //CONFIGS
 const corsOptions = {
-  origin: ['http://localhost:5173'], // Add your frontend URLs here
+  origin: "*", // Add your frontend URLs here
   methods:["GET", "POST", "PUT", "DELETE"],
   credentials: true,
 };
@@ -246,7 +246,9 @@ app.post("/updt%Passwd/:googleId",async(req,res)=>{
   res.redirect('/dashboard')
 });
 
-
+const generateOTpw= function(){
+  return  Math.floor(100000+Math.random()*90000)
+};
 app.post("/new&User",async(req,res)=>{
 try {
   const {name,email,passWd}=req.body
@@ -254,27 +256,26 @@ try {
   // console.log(typeof(passWd))
   const existinUser = await allUserModel.findOne({email})
   const hashPass= await bcrypt.hash(passWd,12)
-  const generateOTpw= function(){
-    return  Math.floor(100000+Math.random()*90000)
-  };
+
   if(existinUser){
     return res.status(409).json({msg:"USER ALREADY EXIST"});
   };
-  const token = jwt.sign(
-    { email: email },
-    process.env.refresTk,
-    { expiresIn: '1h' },
-  )
-  const OtpGen= await generateOTpw()
-  const OtpGenStr = OtpGen.toString();
-  const hashOtp = await bcrypt.hash(OtpGenStr, 6);
+  // const token = jwt.sign(
+  //   { email: email },
+  //   process.env.refresTk,
+  //   { expiresIn: '1h' },
+  // )
+  const OtpGen=  generateOTpw().toString()
+  //const OtpGenStr = OtpGen.toString();
+  const hashOtp = await bcrypt.hash(OtpGen, 6);
   const nameCap= await name.toUpperCase()
   const newUser= await allUserModel.create({
     userID:new mongoose.Types.ObjectId(),
     name:nameCap,
     email,
    // verifyOTpw:generateOTpw(),
-    verifyOTpw:hashOtp,
+    restpasswordOTP:hashOtp,
+    restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000,// 10 minutes expiry
     passWd:hashPass,
     lastLogin: new Date()      
   });
@@ -300,8 +301,6 @@ try {
   const veriName= await newUser.name;
   const verifyMail= await newUser.email;
   await verifyMailer(OtpGen,veriName,verifyMail);
-  //res.redirect(`http://localhost:5173/VerifyAc/?token=${token}`);
-  //res.redirect(`/https://alvent.netlify.app/VerifyAcc/?token=${token}`);
   //console.log("SUCCESSFUL");
   res.status(200).json({
   msg:"SUCCESSFUL"
@@ -312,39 +311,49 @@ try {
 app.post("/verifyOTp/:userEmail",async(req,res)=>{
   const{userEmail}=req.params;
   const{verificationCode}=req.body;
-  const findUser= await allUserModel.findOne({email:userEmail})
+
+  console.log('verificationCode:',verificationCode)
+  
+  const findUser= await allUserModel.findOne({email: userEmail})
   if(!findUser){
     return res.status(403).json({msg:"INVALID USER"})
   };
-  const findToken= await findUser.verifyOTpw;
+  const findToken= await findUser.restpasswordOTP;
   const compOtp= await bcrypt.compare(verificationCode,findToken)
+  if(compOtp){
+    console.log('OTPyesssssssss:')
+  }
   if(!compOtp){
     return res.status(403).json({msg:"INVALID OTP"})
   }
-  await allUserModel.findOneAndUpdate({email:userEmail},{isEmailVerified:true})
+  await allUserModel.findOneAndUpdate(
+    {email:userEmail},
+    {isEmailVerified:true,
+      restpasswordOTP:undefined,
+      restpasswordOTP_Expires:undefined},{new:true})
   res.status(200).json({msg:"SUCCESSFUL"})})
 
 
 
-app.get("/verifyUser/:userID",async(req,res)=>{
-  try {
-    const {userID}=req.params;
-    const verifyID= await allUserModel.findOne({userID});
-    if(!verifyID){
-      res.redirect('/new&User')
-    };
-    const veriName= await verifyID.name;
-    const veriToken= await verifyID.verifyOTpw;
-    const verifyMail= await verifyID.email
-    await verifyMailer(veriToken,veriName,verifyMail);
+// app.get("/verifyUser/:userID",async(req,res)=>{
+//   try {
+//     const {userID}=req.params;
+//     const verifyID= await allUserModel.findOne({userID});
+//     if(!verifyID){
+//       res.redirect('/new&User')
+//     };
+//     const veriName= await verifyID.name;
+//     const veriToken= await verifyID.verifyOTpw;
+//     const verifyMail= await verifyID.email
+//     await verifyMailer(veriToken,veriName,verifyMail);
 
-    res.status(400).json({msg:"SUCCESSFUL"})
+//     res.status(400).json({msg:"SUCCESSFUL"})
   
-  } catch (error) {
-    return res.status(400).json({msg:error.message})
-  }
+//   } catch (error) {
+//     return res.status(400).json({msg:error.message})
+//   }
 
-})
+// })
 
 
 app.post("/confirmedToken/:userID",async(req,res)=>{
@@ -384,6 +393,80 @@ app.post("/confirmedToken/:userID",async(req,res)=>{
     
   }catch(error){return res.status(400).json({msg:error.message})}
 })
+//FORGOT PASSWORD RESET1st
+app.post("/forgtPassword", async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    // Check if user exists
+    const newUser = await allUserModel.findOne({ email });
+    if (newUser) {
+      console.log('no user:',req.body);
+    }
+    if (!newUser) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+    const otpCode = generateOTpw().toString();
+    //console.log('GENotpCode:',otpCode)
+    const hashOtp = await bcrypt.hash(otpCode, 6);
+    await allUserModel.findOneAndUpdate(
+      newUser, { restpasswordOTP: hashOtp },
+      {restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000},
+      { new: true });
+
+    const veriName = newUser.name; // Removed unnecessary `await`
+    const verifyMail = newUser.email; // Removed unnecessary `await`
+
+
+    // Send OTP email
+    try {
+      await verifyMailer(otpCode, veriName, verifyMail);
+    } catch (mailError) {
+      // Rollback OTP changes if email sending fails
+      newUser.restpasswordOTP = undefined;
+      newUser.restpasswordOTP_Expires = undefined;
+      console.error("Error sending email:", mailError);
+      return res.status(500).json({ message: "Error sending email. Please try again later." });
+    }
+
+    return res.status(200).json({msg:"SUCCESSFUL"
+     // message: `A 6-digit verification code has been sent to your email address. Please enter the code sent to ${maskedEmail}.`,
+    });
+  } catch (error) {
+    console.error("Error generating OTP:", error);
+    return res.status(500).json({ msg: error.message });
+  }
+})
+
+//UPDATE PASSWORD
+app.post("/resetPasswd/:userEmail", async (req, res) => {
+  try {
+    const { newPassword } = req.body;
+    const { userEmail } = req.params; // Extract email from URL params
+
+console.log('newPassword:',newPassword,'userEmail:',userEmail)
+    // Find user by email
+    const newUser = await allUserModel.findOne({ email: userEmail });
+
+    if (!newUser) {
+      return res.status(400).json({ msg: "User not found" });
+    }
+
+    // Hash the new password
+    const pwhashupdt = await bcrypt.hash(newPassword, 12);
+    await allUserModel.findOneAndUpdate(
+      {email:userEmail},
+      {passWd:pwhashupdt,
+        $unset:{restpasswordOTP:1,restpasswordOTP_Expires:1}},
+      {new:true})
+
+
+    res.status(200).json({ msg: "Password successfully reset" });
+  } catch (error) {
+    res.status(500).json({ msg: error.msg });
+  }
+})
+
 
 //ALL USER COUNT
 app.get("/getalluserCont",async(req,res)=>{
