@@ -2,7 +2,8 @@ const express = require("express")
 const session =require("express-session")
 const xml2js = require("xml2js");
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" });
+//const upload = multer({ dest: "uploads/" });
+const upload = multer();
 const mongoose =require("mongoose")
 const passport =require("passport")
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
@@ -18,12 +19,14 @@ const path = require("path"); // To handle file paths
 const axios = require("axios"); // To handle external API
 const GEO_NAMES_USERNAME = 'ALVENT'; 
 const cloudinary = require("cloudinary").v2;
+const {Pool} =require("pg")
 
 const fs = require('fs');
-
+//multer().none()
 
 //MODULE EXPORTS
 const dbconnect= require("./dbconnnect")
+const rdbmsConnect=require("./rdbms")
 const ensureAuth=require("./middleware/protecto2auth")
 const o2authUser=require("./model/o2AuthUsersDb")
 const eventModel=require("./model/eventsDB")
@@ -32,7 +35,12 @@ const {orgORGmodel,indiOrgModel,allUserModel}=require("./model/organizerDB")
 const sessionModel=require("./model/sessiosDB")
 const ticktModel=require("./model/ticketDb")
 const {landingtrdPagination,landingFtPagination}=require("./services/utilities")
+const subscriberModel=require("./model/subscriberDB")
+const sendSubConfirmatn=require("./services/subscribeMailer");
+const { execFileSync } = require("child_process");
+const { type } = require("os");
 //const landingFtPagination=require("./services/utilities")
+require("./services/autoMailerSheduler")//for monthly event digest
 
 //CONFIGS
 const corsOptions = {
@@ -50,6 +58,7 @@ dotenv.config()
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }));
 dbconnect()
+//rdbmsConnect()
 const PORT= process.env.appPort || 7000
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -180,8 +189,21 @@ app.get('/auth/google/callback',
   }
   }
 );
-
-
+const newUsers=require("./routes/newUserRout");
+const login=require("./routes/loGinRout");
+const otpActivate=require("./routes/confirmTokRout");
+const forgotPWD=require("./routes/forgetPWDrout")
+const forgotPWDOTP=require("./routes/forgetPWDrout")
+const resetPassword=require("./routes/forgetPWDrout")
+const createEvent=require("./routes/creatEventRout")
+//ROUTERS
+app.use("/api",newUsers);//SIGNUP API
+app.use("/api",login);//LOGIN API
+app.use("/api",otpActivate);//OTP ACTIVATION API
+app.use("/api",forgotPWD);//FORGOT PASSWORD API
+app.use("/api",forgotPWDOTP);//FORGOT PASSWORD OTP API
+app.use("/api",resetPassword);//RESET PASSWORD API
+app.use("/api",createEvent);//CREATE EVENT API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -250,64 +272,7 @@ app.post("/updt%Passwd/:googleId",async(req,res)=>{
 const generateOTpw= function(){
   return  Math.floor(100000+Math.random()*90000)
 };
-app.post("/new&User",async(req,res)=>{
-try {
-  const {name,email,passWd}=req.body
-  // console.log('PAYLOAD:',req.body)
-  // console.log(typeof(passWd))
-  const existinUser = await allUserModel.findOne({email})
-  const hashPass= await bcrypt.hash(passWd,12)
 
-  if(existinUser){
-    return res.status(409).json({msg:"USER ALREADY EXIST"});
-  };
-  // const token = jwt.sign(
-  //   { email: email },
-  //   process.env.refresTk,
-  //   { expiresIn: '1h' },
-  // )
-  const OtpGen=  generateOTpw().toString()
-  //const OtpGenStr = OtpGen.toString();
-  const hashOtp = await bcrypt.hash(OtpGen, 6);
-  const nameCap= await name.toUpperCase()
-  const newUser= await allUserModel.create({
-    userID:new mongoose.Types.ObjectId(),
-    name:nameCap,
-    email,
-   // verifyOTpw:generateOTpw(),
-    restpasswordOTP:hashOtp,
-    restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000,// 10 minutes expiry
-    passWd:hashPass,
-    lastLogin: new Date()      
-  });
-  await indiOrgModel.create({
-    IndName:{
-            firstName: nameCap, 
-            lastName:  nameCap|| ''},
-    phnCntkt:{
-      countryCd:"",
-      phnNum:""},
-    address:"",
-    email,
-    userID:newUser.userID,
-    regDate:new Date(),
-    userFollow:[],
-    userFollowCnt:0,
-    crtdTketz:[],
-    crtdTketCnt:0,
-    totalEarning:0
-  })
-  if(!newUser)throw new Error("ERROR IN DATA SAVE");
-  const veriToken= await newUser.verifyOTpw;
-  const veriName= await newUser.name;
-  const verifyMail= await newUser.email;
-  await verifyMailer(OtpGen,veriName,verifyMail);
-  //console.log("SUCCESSFUL");
-  res.status(200).json({
-  msg:"SUCCESSFUL"
-  });
-} catch (error){ return res.status(401).json({msg:error.message})
-}});
 
 app.post("/verifyOTp/:userEmail",async(req,res)=>{
   const{userEmail}=req.params;
@@ -357,117 +322,6 @@ app.post("/verifyOTp/:userEmail",async(req,res)=>{
 // })
 
 
-app.post("/confirmedToken/:userID",async(req,res)=>{
-  try{
-    const{userToken}=req.body;
-    const {userID}=req.params;
-    const verifyID= await allUserModel.findOne({userID});
-    if(!userToken){
-      res.status(403).json({msg:"OTP REQUIRED"})
-    };
-    const veriToken= await verifyID.verifyOTpw;
-    if(userToken===veriToken){
-      await allUserModel.findOneAndUpdate({userID},{isEmailVerified:true});
-      const sessionTokz=await jwt.sign({userID},`${process.env.accessTk}`,{expiresIn:"60m"})
-      //GENERATE SESSION ID
-      let sessionID
-      let isUnique= false
-      while(!isUnique){
-      sessionID= Math.floor(Math.random()*88888)
-      const findSess= await sessionModel.findOne({sessionID})
-      if(!findSess)isUnique=true
-      }
-      //SESSION DB UPDATE
-      const findUserid= await allUserModel.findOne({userID})
-      const refrshTokz=await jwt.sign({userID},`${process.env.refresTk}`,{expiresIn:"1m"})
-      await sessionModel.create({
-          sessionID:sessionID,
-          userID:findUserid,
-          sessToken:sessionTokz,
-          refrshTkn:refrshTokz
-      })
-      res.status(200).json({
-      msg:"SUCCESSFUL",
-      token:sessionTokz
-    })
-    }else{res.status(400).json({msg:"INVALID ACTION"})};
-    
-  }catch(error){return res.status(400).json({msg:error.message})}
-})
-//FORGOT PASSWORD RESET1st
-app.post("/forgtPassword", async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    // Check if user exists
-    const newUser = await allUserModel.findOne({ email });
-    if (newUser) {
-      console.log('no user:',req.body);
-    }
-    if (!newUser) {
-      return res.status(404).json({ msg: "User not found" });
-    }
-    const otpCode = generateOTpw().toString();
-    //console.log('GENotpCode:',otpCode)
-    const hashOtp = await bcrypt.hash(otpCode, 6);
-    await allUserModel.findOneAndUpdate(
-      newUser, { restpasswordOTP: hashOtp },
-      {restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000},
-      { new: true });
-
-    const veriName = newUser.name; // Removed unnecessary `await`
-    const verifyMail = newUser.email; // Removed unnecessary `await`
-
-
-    // Send OTP email
-    try {
-      await verifyMailer(otpCode, veriName, verifyMail);
-    } catch (mailError) {
-      // Rollback OTP changes if email sending fails
-      newUser.restpasswordOTP = undefined;
-      newUser.restpasswordOTP_Expires = undefined;
-      console.error("Error sending email:", mailError);
-      return res.status(500).json({ message: "Error sending email. Please try again later." });
-    }
-
-    return res.status(200).json({msg:"SUCCESSFUL"
-     // message: `A 6-digit verification code has been sent to your email address. Please enter the code sent to ${maskedEmail}.`,
-    });
-  } catch (error) {
-    console.error("Error generating OTP:", error);
-    return res.status(500).json({ msg: error.message });
-  }
-})
-
-//UPDATE PASSWORD
-app.post("/resetPasswd/:userEmail", async (req, res) => {
-  try {
-    const { newPassword } = req.body;
-    const { userEmail } = req.params; // Extract email from URL params
-
-console.log('newPassword:',newPassword,'userEmail:',userEmail)
-    // Find user by email
-    const newUser = await allUserModel.findOne({ email: userEmail });
-
-    if (!newUser) {
-      return res.status(400).json({ msg: "User not found" });
-    }
-
-    // Hash the new password
-    const pwhashupdt = await bcrypt.hash(newPassword, 12);
-    await allUserModel.findOneAndUpdate(
-      {email:userEmail},
-      {passWd:pwhashupdt,
-        $unset:{restpasswordOTP:1,restpasswordOTP_Expires:1}},
-      {new:true})
-
-
-    res.status(200).json({ msg: "Password successfully reset" });
-  } catch (error) {
-    res.status(500).json({ msg: error.msg });
-  }
-})
-
 
 //ALL USER COUNT
 app.get("/getalluserCont",async(req,res)=>{
@@ -475,40 +329,6 @@ app.get("/getalluserCont",async(req,res)=>{
   res.json(userCount)
 })
 
-app.post("/loginUser",async(req,res)=>{
-  try{
-    const{email,passWd}=req.body
-    const existinUser = await allUserModel.findOne({email:email})
-    console.log('payloadPPP:',req.body)
-
-    if(!existinUser){
-      return res.status(403).json({msg:"NEW USER? GO TO SIGNUP"})
-    };
-    const unHaspwd= await bcrypt.compare(passWd,existinUser.passWd)
-    if(!unHaspwd){
-      return res.status(403).json({msg:"ACCESS UNKNOWN"})
-    }
-    const updlastLogin= await allUserModel.findOneAndUpdate(
-      {userID:existinUser.userID},
-      {lastLogin:new Date()},
-      {new:true});
-      const token = jwt.sign(
-        { email: email },
-        process.env.refresTk,
-        { expiresIn: '1h' },
-      );
-  
-    const datexepl= await moment(updlastLogin.lastLogin).format('MMMM Do YYYY, h:mm:ss a')
-    res.status(200).json({
-      msg:"SUCCESSFUL",
-      token,
-      userID:existinUser.userID,
-      name:existinUser.name,
-      lastLogin:datexepl
-    })
-  }catch(error){return res.status(400).json({msg:error.message})}
-
-})
 
 app.post("/creatIndioRg/:userID",async(req,res)=>{
   try {
@@ -604,40 +424,64 @@ app.post("/creat%ORGoRg/:userID",async(req,res)=>{
 });
 
 //CREATE EVENT FOR BOTH IND AND ORG
-app.post("/createVnt/:userID",async(req,res)=>{
+app.post("/createVnt/:userID",upload.none(),async(req,res)=>{
   try {
+    //console.log("REQ BODY:",req.body)
+    console.log("params:",req.params)
   const {
     eventTitle,
     eventDesc,
+    //startDate,
     eventStart,
     eventEnd,
+    //endDate,
     eventType,
     url,
+    endClock,
+    startClock,
+    startTimezone,
+    startTime,
+    endTime,
+    endTimezone,
+    eventCategory,
     maximumAttendees,
-    //StartTime,
-    //EndTime,
-    eventVenue,
+    eventCountry,
     eventState,
     eventCity,
-    eventCountry,
-    tickeType,
+    eventVenue,
+    eventTags,
+    ticketConfig,
     eventImgURL,
-    //ticketPrice 
+    facebook,
+    instagram
   }=req.body;
-  //console.log('request body:',req.body)
   const {userID}=req.params;
 
-  
- 
-    if (eventStart < new Date() || eventEnd <= new Date()) {
-      return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
-    }
 
-  
- const findUser = await allUserModel.findOne({ userID });
-    if (!findUser) {
-      return res.status(400).json({ msg: "UNKNOWN USER" });
-    }
+  const fullStartTime = `${startTime} ${startClock} `;
+  const fullEndTime = `${endTime} ${endClock} `;
+
+  const eventStartDate = new Date(eventStart);
+  const eventEndDate = new Date(eventEnd);
+
+  const today   = new Date();
+  const envtStTime= moment(fullStartTime,"HH:mm A")
+  const envtEndTime= moment(fullEndTime,"HH:mm A")
+  console.log("envtStTime:",envtStTime)
+  console.log("envtEndTime:",envtEndTime)
+
+  if(!envtEndTime.isAfter(envtStTime)){
+    return res.status(400).json({ msg: "Event start/end time Variation err" });
+  }
+
+  if (eventStartDate < today || eventEndDate < today || eventEndDate < eventStartDate) {
+    return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
+  }
+
+  const findUser = await allUserModel.findOne({ userID });
+  if (!findUser) {
+    return res.status(400).json({ msg: "UNKNOWN USER" });
+  }
   
   const {nanoid}= await  import('nanoid');
   //const conVTitle= await eventTitle.toUpperCase()
@@ -662,24 +506,30 @@ app.post("/createVnt/:userID",async(req,res)=>{
     eventDesc,
     eventDate:{
       eventStart,
-      eventEnd},
-      //StartTime:"",
-      //EndTime:"",
+      eventEnd,
+      endTimezone,
+      startTimezone
+    },
+    eventTime:{
+      start:startTime,
+      end:endTime
+    },
     eventType,
-    url,
-    eventLocation:{
-      eventVenue,
-      eventCity,
-      eventState,
-      eventCountry},
-    //isPrivate,
-    maximumAttendees:Number(maximumAttendees),
-    //eventCapacity,
-    //customTags: customTags?.split(","),
+    ticketConfig,
+    eventCategory,
+    venueInformation:{
+      eventCountry:eventCountry,
+      eventState:eventState,
+      eventCity:eventCity,
+      address:eventVenue,
+      url:url},
+    socialDetail:{
+      fb: facebook,
+      inst: instagram},
+    eventCapacity:maximumAttendees,
+    eventTags,
     orgID: useORGID,
-    userID:findUser.userID,
-    tickeType,
-    //ticketPrice:0
+    userID:findUser.userID
   })
 
  const saveDtat= await newEvent.save();
@@ -703,9 +553,43 @@ app.post("/createVnt/:userID",async(req,res)=>{
       if (!evnttd) {
         return res.status(404).json({ msg: "Event not found" });
       }
-     // console.log("eventID:",evnttd)
-      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY, h:mm:ss a");
-      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY, h:mm:ss a");
+      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY");
+      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY");
+      const eventcountry = evnttd.venueInformation.eventCountry || "Unknown Country";
+      
+      const eventState = evnttd.venueInformation.eventState || "Unknown State";
+      const eventCity = evnttd.venueInformation.eventCity || "Unknown City";
+      const eventVenue = evnttd.venueInformation.address || "Unknown Venue";
+
+
+      const response = await axios.get(`http://api.geonames.org/countryInfo?formatted=true&lang=eng&username=${GEO_NAMES_USERNAME}`);
+          // Convert XML response to JSON
+    xml2js.parseString(response.data, (err, result) => {
+      if (err) {
+        console.error("Error parsing XML:", err);
+        return res.status(500).json({ message: "Error parsing XML" });
+      }
+
+      // Check if 'country' array exists and map over it
+      const countries = result.geonames.country.map(country => ({
+        geonameId: country.geonameId[0],
+        countryName: country.countryName[0]
+      }));
+      //console.log("Countries:", countries);
+      const countryData = countries.find(country => country.countryName === eventcountry) || {};
+      console.log("Country Data:", countryData);
+    });
+      // const Sresponse = await axios.get(`http://api.geonames.org/children?geonameId=${eventcountry}&username=${GEO_NAMES_USERNAME}`);
+      // const CTresponse = await axios.get(`http://api.geonames.org/children?geonameId=${eventState}&username=${GEO_NAMES_USERNAME}`);
+      
+      // const countryData = response.data.geonames.find(country => country.countryName === eventcountry);
+      // const stateData = Sresponse.data.geonames.find(state => state.adminName1 === eventState);
+      // const cityData = CTresponse.data.geonames.find(city => city.name === eventCity);
+
+      console.log("countryData:",countryData)
+      console.log("stateData:",stateData)
+      console.log("cityData:",cityData)
+
 
       const userId = evnttd.userID;
       let organizerName = "Unknown Organizer";
@@ -721,7 +605,8 @@ app.post("/createVnt/:userID",async(req,res)=>{
         eventStart: formattedEventStart,
         eventEnd: formattedEventEnd,
       };
-      
+      console.log("evnttyWithOrgNames:",evnttyWithOrgNames);
+
       res.status(200).json({
         msg:"SUCCESSFUL",
         evnttd:evnttyWithOrgNames
@@ -758,10 +643,12 @@ app.post("/createVnt/:userID",async(req,res)=>{
   //GET USER NAME FOR GOOGLE AUTH PURPOSE
   app.get("/userNameFetch/",async(req,res)=>{
     const{email}=req.query
-    const finduser= await allUserModel.findOne({email});
+    
+    const finduser= await allUserModel.findOne({email:email});
+    console.log("finduser:",finduser)
     return res.status(200).json({
       msg:"SUCCESSFUL",
-      userName:finduser.name
+      userDetails:finduser
     })
   })
   //FETCH USER NAME AFTER MANUAL LOGIN
@@ -841,8 +728,103 @@ app.post("/createVnt/:userID",async(req,res)=>{
 
   })
 
+// SUBSCRIBERS
+app.post("/userSubscribe",async(req,res)=>{
+  try {
+    console.log("SUBSCRIBER:",req.body)
+    const {email}=req.body;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ msg: "Invalid email format" });
+    }
+    const findSubscriber= await subscriberModel.findOne({email});
+
+    if(!findSubscriber){
+    await subscriberModel.create({
+      email:email,
+      subscribed:true
+    })
+
+    await sendSubConfirmatn(email)
+
+    return res.status(200).json({msg:"SUBSCRIBED SUCCESSFULLY"});
+  }
+      
+    if(findSubscriber.subscribed === true ){
+      return res.status(409).json({msg:"YOU ARE ALREADY A SUBSCRIBER OF THIS PLATFORM"})}
+    else{
+      await subscriberModel.findOneAndUpdate(
+        {email:email},
+        {subscribed:true},
+        {new:true}
+      )
+
+     return res.status(200).json({msg:"SUBSCRIPTION REACTIVATED"})
+    }
+}catch(err){res.status(400).json({msg:err.message})}
+});
+// UNSUBSCRIBERS
+app.post("/userUNSubscribe",async(req,res)=>{
+  try {
+    const {email}=req.body
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ msg: "Invalid email format" });
+    }
+    const findSubscriber= await subscriberModel.findOne({email:email})
+
+    if(findSubscriber.subscribed === false ){
+      return res.status(409).json({msg:"YOU ARE NO MORE A SUBSCRIBER OF THIS PLATFORM"})}
+    if(findSubscriber.subscribed === true){
+      await subscriberModel.findOneAndUpdate(
+        {email:email},
+        {subscribed:false},
+        {new:true}
+      )
+      return res.status(200).json({msg:"SUBSCRIPTION DEACTIVATED"})
+    }
+   //const sendsubMail= await sendSubConfirmatn(email)
+    if(!sendsubMail){
+      return res.status(400).json({msg:"ERROR IN SENDING MAIL"})
+    }
+
+  }catch(err){res.status(400).json({msg:err.message})}
+})
 
 
+//GET TOTAL REVENUE ORGANIZER WISE
+app.get('/orGTotRev/:userEmail',async(req,res)=>{
+  const {userEmail}=req.params
+  const findUser= await allUserModel.findOne({email:userEmail})
+  if(!findUser){
+    return res.status(404).json({msg:"UNKNOWN USER"})
+  };
+  const eventID = await eventModel.find({ orgID: findUser.userID }).distinct('eventID');
+  if(eventID.length === 0){
+    return res.status(200).json({
+      msg:"NO EVENT CREATED YET",
+      data:0
+    });
+  }
+  const tickets = await ticktModel.find({ eventID: { $in: eventID } });
+  const priceMap = {};
+  tickets.forEach(ticket => { priceMap[ticket.ticketID]= {type:ticket.tickeType, price:ticket.ticketPrice}});
+  const ticketIDS = Object.keys(priceMap)
+
+  const soldTickets = await eventModel.find({ eventID: { $in: eventID } })
+  const totalSoldTickets = soldTickets.reduce((acc, soldTickets) => {
+    return acc + (soldTickets.ticketsSold || 0);
+  })
+  soldTickets.forEach(ticket => {
+    const {price} = priceMap[ticket.ticketID] || {};
+    totalRevenue += price || 0;
+  });
+  console.log(`Total Revenue for ${findUser.name}:${totalRevenue}`);
+  res.status(200).json({
+    msg:"SUCCESSFUL",
+    totalRevenue
+  });
+});
 //TICKETING
   app.post("/tickzCrt/:eventID",async(req,res)=>{
     try {
