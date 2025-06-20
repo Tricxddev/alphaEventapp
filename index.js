@@ -245,7 +245,7 @@ app.get('/userInfo', async (req, res) => {
   } catch (error) {
     res.status(500).json({ success: false, msg: error.message });
   }
-});
+});;
 
 app.get('/dashboard',ensureAuth,(req,res)=>{
   res.send(`hello,${req.user.displayName}`)
