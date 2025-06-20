@@ -1,29 +1,27 @@
-const nodemailer =require("nodemailer")
-const SendmailTransport = require("nodemailer/lib/sendmail-transport")
-const dotenv = require("dotenv")
-const { express } = require("express")
+const nodemailer = require("nodemailer");
+const dotenv = require("dotenv");
+dotenv.config();
 
-const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
-   const botask= nodemailer.createTransport({
-        service:'gmail',
-        auth:{
-            user:`${process.env.botMailer}`,
-            pass:`${process.env.botMailpwd}`
-        }
-    })
+const sendSubConfirmatn = async (email) => {
+  try {
+    const botask = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.botMailer,
+        pass: process.env.botMailpwd,
+      },
+    });
 
-
-const sendingDetails= {
-    from:process.env.botMailer,
-    to:verifyMail,
-    subject:`ALVENT: HEY!,${veriName} VERIFY YOUR ACCOUNT`,
-    text:`<br><br>HERE IS THE TOKEN:<h2>${OtpGen}</h2>     `,
-    html:`<!DOCTYPE html>
+    const mailOptions = {
+      from: process.env.botMailer,
+      to: email,
+      subject: "Subscription Successful: Welcome to ALVENT!",
+      html: `<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OTP Verifcation</title>
+    <title>Subscription Confirmation</title>
     <style>
         body {
             margin: 0;
@@ -60,12 +58,6 @@ const sendingDetails= {
             font-size: 16px;
             color: #666;
         }
-        .code {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2a5298;
-            margin: 20px 0;
-        }
         .footer {
             padding: 20px;
             text-align: center;
@@ -77,13 +69,6 @@ const sendingDetails= {
             color: #2a5298;
             text-decoration: none;
             font-weight: bold;
-        }
-        .social-icons {
-            margin-top: 10px;
-        }
-        .social-icons img {
-            width: 24px;
-            margin: 0 5px;
         }
     </style>
 </head>
@@ -97,40 +82,41 @@ const sendingDetails= {
 
         <!-- Main Content -->
         <div class="content">
-            <h2>Hello ${veriName},</h2>
-            <p>Please enter the code below to complete your login.</p>
-            <p class="code">${OtpGen}</p>
-            <p>If you did not authorize this login attempt,please ignore this notification and promptly contact our support team via email for immediate assistance at 
-            <a href="mailto:support@alphaevents.com" style="color: #2a5298; font-weight: bold;">support@alphaevents.com</a></p>
+            <h2>Welcome to ALVENT!</h2> <br><br>
+            <p>Thank you for subscribing! You are now subscribed to receive the latest event notifications from top global organizations.</p>
+            
+            <p>We are thrilled to have you on board and will keep you updated with exciting events. Stay tuned!</p>
         </div>
 
         <!-- Footer Section -->
         <div class="footer">
-            <p>Need help? Ask at <a href="mailto:support@alphaevents.com">support@alphaevents.com</a> or visit our <a href="#">Help Center</a></p>
+            <p>If you have any questions, feel free to contact us at <a href="mailto:support@alphaevents.com">support@alphaevents.com</a>.</p>
             <hr>
             <p><strong>Alpha Event</strong><br>Address 360, City, State.</p>
 
-            <!-- Social Icons -->
+              <!-- Social Icons -->
             <div class="social-icons">
                 <a href="#"><img src="facebook-icon.png" alt="Facebook"></a>
                 <a href="#"><img src="twitter-icon.png" alt="Twitter"></a>
                 <a href="#"><img src="linkedin-icon.png" alt="LinkedIn"></a>
             </div>
-
-            <p>&copy; 2025 Company.</p>
+            <p>&copy; 2025 Alpha Event.</p>
         </div>
     </div>
 
 </body>
-</html>
-`
+</html>`
+    };
 
-}
+    const sendMailAction = await botask.sendMail(mailOptions);
+    if(!sendMailAction){
+      return res.status(400).json({msg:"ERROR IN SENDING MAIL"})
+    }
+    console.log("Subscription confirmation email sent successfully:", sendMailAction.response);
+  } catch (error) {
+    console.error("Error sending subscription confirmation email:", error);
+    throw new Error("Subscription confirmation email could not be sent.");
+  }
+};
 
-const sendMailAtion= await botask.sendMail(sendingDetails)
-
-
- //console.log(sendMailAtion)
-}
-
-module.exports=verifyMailer
+module.exports = sendSubConfirmatn;
