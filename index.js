@@ -196,6 +196,8 @@ const forgotPWD=require("./routes/forgetPWDrout")
 const forgotPWDOTP=require("./routes/forgetPWDrout")
 const resetPassword=require("./routes/forgetPWDrout")
 const createEvent=require("./routes/creatEventRout")
+const subscribe= require("./routes/sunbscribersRout")
+const UNSubscribe= require("./routes/sunbscribersRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -204,6 +206,8 @@ app.use("/api",forgotPWD);//FORGOT PASSWORD API
 app.use("/api",forgotPWDOTP);//FORGOT PASSWORD OTP API
 app.use("/api",resetPassword);//RESET PASSWORD API
 app.use("/api",createEvent);//CREATE EVENT API
+app.use("/api",subscribe);//SUBSCRIBE API
+app.use("/api",UNSubscribe);//UNSUBSCRIBE API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -728,68 +732,7 @@ app.post("/createVnt/:userID",upload.none(),async(req,res)=>{
 
   })
 
-// SUBSCRIBERS
-app.post("/userSubscribe",async(req,res)=>{
-  try {
-    console.log("SUBSCRIBER:",req.body)
-    const {email}=req.body;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ msg: "Invalid email format" });
-    }
-    const findSubscriber= await subscriberModel.findOne({email});
 
-    if(!findSubscriber){
-    await subscriberModel.create({
-      email:email,
-      subscribed:true
-    })
-
-    await sendSubConfirmatn(email)
-
-    return res.status(200).json({msg:"SUBSCRIBED SUCCESSFULLY"});
-  }
-      
-    if(findSubscriber.subscribed === true ){
-      return res.status(409).json({msg:"YOU ARE ALREADY A SUBSCRIBER OF THIS PLATFORM"})}
-    else{
-      await subscriberModel.findOneAndUpdate(
-        {email:email},
-        {subscribed:true},
-        {new:true}
-      )
-
-     return res.status(200).json({msg:"SUBSCRIPTION REACTIVATED"})
-    }
-}catch(err){res.status(400).json({msg:err.message})}
-});
-// UNSUBSCRIBERS
-app.post("/userUNSubscribe",async(req,res)=>{
-  try {
-    const {email}=req.body
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ msg: "Invalid email format" });
-    }
-    const findSubscriber= await subscriberModel.findOne({email:email})
-
-    if(findSubscriber.subscribed === false ){
-      return res.status(409).json({msg:"YOU ARE NO MORE A SUBSCRIBER OF THIS PLATFORM"})}
-    if(findSubscriber.subscribed === true){
-      await subscriberModel.findOneAndUpdate(
-        {email:email},
-        {subscribed:false},
-        {new:true}
-      )
-      return res.status(200).json({msg:"SUBSCRIPTION DEACTIVATED"})
-    }
-   //const sendsubMail= await sendSubConfirmatn(email)
-    if(!sendsubMail){
-      return res.status(400).json({msg:"ERROR IN SENDING MAIL"})
-    }
-
-  }catch(err){res.status(400).json({msg:err.message})}
-})
 
 
 //GET TOTAL REVENUE ORGANIZER WISE
