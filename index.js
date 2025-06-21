@@ -198,6 +198,9 @@ const resetPassword=require("./routes/forgetPWDrout")
 const createEvent=require("./routes/creatEventRout")
 const subscribe= require("./routes/sunbscribersRout")
 const UNSubscribe= require("./routes/sunbscribersRout")
+const eventDetail=require("./routes/eventDetailRout")
+const organizerEvents=require("./routes/organizerEventRout")
+const trendEvnt=require("./routes/trendEventRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -208,6 +211,9 @@ app.use("/api",resetPassword);//RESET PASSWORD API
 app.use("/api",createEvent);//CREATE EVENT API
 app.use("/api",subscribe);//SUBSCRIBE API
 app.use("/api",UNSubscribe);//UNSUBSCRIBE API
+app.use("/api",eventDetail);//EVENT DETAIL API
+app.use("/api",organizerEvents);//ORGANIZER EVENTS API
+app.use("/api",trendEvnt);//TRENDING EVENTS API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -247,12 +253,12 @@ app.get('/userInfo', async (req, res) => {
   }
 });;
 
-app.get('/dashboard',ensureAuth,(req,res)=>{
-  res.send(`hello,${req.user.displayName}`)
-})
+// app.get('/dashboard',ensureAuth,(req,res)=>{
+//   res.send(`hello,${req.user.displayName}`)
+// })
 
 
-//CREATING  AN EVENT //EVENT ID,ORG ID YET TO BE GENERATED DUE TO CONCLUSION
+
 app.post("/updt%Passwd/:googleId",async(req,res)=>{
   const{googleId}=req.params;
   const{passWd}=req.body;
@@ -302,29 +308,6 @@ app.post("/verifyOTp/:userEmail",async(req,res)=>{
       restpasswordOTP:undefined,
       restpasswordOTP_Expires:undefined},{new:true})
   res.status(200).json({msg:"SUCCESSFUL"})})
-
-
-
-// app.get("/verifyUser/:userID",async(req,res)=>{
-//   try {
-//     const {userID}=req.params;
-//     const verifyID= await allUserModel.findOne({userID});
-//     if(!verifyID){
-//       res.redirect('/new&User')
-//     };
-//     const veriName= await verifyID.name;
-//     const veriToken= await verifyID.verifyOTpw;
-//     const verifyMail= await verifyID.email
-//     await verifyMailer(veriToken,veriName,verifyMail);
-
-//     res.status(400).json({msg:"SUCCESSFUL"})
-  
-//   } catch (error) {
-//     return res.status(400).json({msg:error.message})
-//   }
-
-// })
-
 
 
 //ALL USER COUNT
@@ -427,222 +410,9 @@ app.post("/creat%ORGoRg/:userID",async(req,res)=>{
 
 });
 
-//CREATE EVENT FOR BOTH IND AND ORG
-app.post("/createVnt/:userID",upload.none(),async(req,res)=>{
-  try {
-    //console.log("REQ BODY:",req.body)
-    console.log("params:",req.params)
-  const {
-    eventTitle,
-    eventDesc,
-    //startDate,
-    eventStart,
-    eventEnd,
-    //endDate,
-    eventType,
-    url,
-    endClock,
-    startClock,
-    startTimezone,
-    startTime,
-    endTime,
-    endTimezone,
-    eventCategory,
-    maximumAttendees,
-    eventCountry,
-    eventState,
-    eventCity,
-    eventVenue,
-    eventTags,
-    ticketConfig,
-    eventImgURL,
-    facebook,
-    instagram
-  }=req.body;
-  const {userID}=req.params;
 
 
-  const fullStartTime = `${startTime} ${startClock} `;
-  const fullEndTime = `${endTime} ${endClock} `;
 
-  const eventStartDate = new Date(eventStart);
-  const eventEndDate = new Date(eventEnd);
-
-  const today   = new Date();
-  const envtStTime= moment(fullStartTime,"HH:mm A")
-  const envtEndTime= moment(fullEndTime,"HH:mm A")
-  console.log("envtStTime:",envtStTime)
-  console.log("envtEndTime:",envtEndTime)
-
-  if(!envtEndTime.isAfter(envtStTime)){
-    return res.status(400).json({ msg: "Event start/end time Variation err" });
-  }
-
-  if (eventStartDate < today || eventEndDate < today || eventEndDate < eventStartDate) {
-    return res.status(400).json({ msg: "DATE CANNOT BE YESTERDAY OR LESS" });
-  }
-
-  const findUser = await allUserModel.findOne({ userID });
-  if (!findUser) {
-    return res.status(400).json({ msg: "UNKNOWN USER" });
-  }
-  
-  const {nanoid}= await  import('nanoid');
-  //const conVTitle= await eventTitle.toUpperCase()
-  const createDT= new Date().toISOString().replace(/[-:.TZ]/g, '')
-  const findORGID=await orgORGmodel.findOne({userID})
-
-  const genEvntID= async()=>{
-    if(findORGID){
-       spltORGNm= findORGID.orgName.slice(0,3).toUpperCase()
-       return  `${spltORGNm}-${createDT}-${nanoid(5)}`;
-    }else{
-      //if(!findORGID){
-       return `ALV-${createDT}-${nanoid(5)}`;
-    }}
-  
-  const useORGID = findORGID ? findORGID.userID :null;
-
-   const newEvent = new eventModel({
-    eventID:await genEvntID(),
-    eventTitle,
-    eventImgURL,
-    eventDesc,
-    eventDate:{
-      eventStart,
-      eventEnd,
-      endTimezone,
-      startTimezone
-    },
-    eventTime:{
-      start:startTime,
-      end:endTime
-    },
-    eventType,
-    ticketConfig,
-    eventCategory,
-    venueInformation:{
-      eventCountry:eventCountry,
-      eventState:eventState,
-      eventCity:eventCity,
-      address:eventVenue,
-      url:url},
-    socialDetail:{
-      fb: facebook,
-      inst: instagram},
-    eventCapacity:maximumAttendees,
-    eventTags,
-    orgID: useORGID,
-    userID:findUser.userID
-  })
-
- const saveDtat= await newEvent.save();
-
- if(!saveDtat){
-   console.log("ERROR IN DATA SAVE");
-  }
-  res.status(200).json({
-    msg:"SUCCESSFUL",
-    newEvent
-  })} catch (error) {return res.status(400).json({msg:error.message})}});
-
-  //GET EVENT
-  //app.use("/API",)
-
-  app.get("/eventDetails/:eventID",async(req,res)=>{
-    try {
-      const {eventID}=req.params
-      //console.log("eventID:",eventID)
-      const evnttd= await eventModel.findOne({eventID})
-      if (!evnttd) {
-        return res.status(404).json({ msg: "Event not found" });
-      }
-      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY");
-      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY");
-      const eventcountry = evnttd.venueInformation.eventCountry || "Unknown Country";
-      
-      const eventState = evnttd.venueInformation.eventState || "Unknown State";
-      const eventCity = evnttd.venueInformation.eventCity || "Unknown City";
-      const eventVenue = evnttd.venueInformation.address || "Unknown Venue";
-
-
-      const response = await axios.get(`http://api.geonames.org/countryInfo?formatted=true&lang=eng&username=${GEO_NAMES_USERNAME}`);
-          // Convert XML response to JSON
-    xml2js.parseString(response.data, (err, result) => {
-      if (err) {
-        console.error("Error parsing XML:", err);
-        return res.status(500).json({ message: "Error parsing XML" });
-      }
-
-      // Check if 'country' array exists and map over it
-      const countries = result.geonames.country.map(country => ({
-        geonameId: country.geonameId[0],
-        countryName: country.countryName[0]
-      }));
-      //console.log("Countries:", countries);
-      const countryData = countries.find(country => country.countryName === eventcountry) || {};
-      console.log("Country Data:", countryData);
-    });
-      // const Sresponse = await axios.get(`http://api.geonames.org/children?geonameId=${eventcountry}&username=${GEO_NAMES_USERNAME}`);
-      // const CTresponse = await axios.get(`http://api.geonames.org/children?geonameId=${eventState}&username=${GEO_NAMES_USERNAME}`);
-      
-      // const countryData = response.data.geonames.find(country => country.countryName === eventcountry);
-      // const stateData = Sresponse.data.geonames.find(state => state.adminName1 === eventState);
-      // const cityData = CTresponse.data.geonames.find(city => city.name === eventCity);
-
-      console.log("countryData:",countryData)
-      console.log("stateData:",stateData)
-      console.log("cityData:",cityData)
-
-
-      const userId = evnttd.userID;
-      let organizerName = "Unknown Organizer";
-      //console.log("userID:",userId)
-
-      if (userId) {
-        const organizer = await allUserModel.findOne({ userId });
-        organizerName = organizer?.name || "Unknown Organizer";
-      }
-      const evnttyWithOrgNames = {
-        ...evnttd._doc, // Spread the event document fields
-        organizerName,
-        eventStart: formattedEventStart,
-        eventEnd: formattedEventEnd,
-      };
-      console.log("evnttyWithOrgNames:",evnttyWithOrgNames);
-
-      res.status(200).json({
-        msg:"SUCCESSFUL",
-        evnttd:evnttyWithOrgNames
-      })
-    } catch (error) {return res.status(400).json({msg:error.message})}
-  });
-//yet to implement
-  app.get("/trndeventAllGet",async(req,res)=>{
-    try {
-      const {limit}=landingtrdPagination(req)
-      const evntty= await eventModel.find().limit(limit)
-      const userIds = evntty.map((event) => event.userID);
-      const orgZ = await allUserModel.find({ userID: { $in: userIds } });
-          // Create a mapping of userID to organizer name for quick lookup
-      const organizerMap = orgZ.reduce((map, organizer) => {
-      map[organizer.userID] = organizer.name;
-      return map;
-    }, {});
-
-    const evnttyWithOrgNames = evntty.map((event) => ({
-      ...event._doc, // Spread event document fields
-      organizerName: organizerMap[event.userID] || "Unknown Organizer",
-    }));
-
-      //console.log(evnttyWithOrgNames)
-      
-      res.status(200).json({
-        msg:"SUCCESSFUL",
-        evntty:evnttyWithOrgNames
-      })
-    } catch (error) {return res.status(400).json({msg:error.message})}
-  })
 
   //GET USER NAME FOR GOOGLE AUTH PURPOSE
   app.get("/userNameFetch/",async(req,res)=>{
