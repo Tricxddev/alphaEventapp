@@ -1,6 +1,7 @@
 const express = require("express")
 const mongoose =require("mongoose")
 const subscriberModel=require("../model/subscriberDB")
+const sendSubConfirmatn=require("../services/subscribeMailer");
 
 const SUBSCRIBERFXN= async(req,res)=>{
   try {
