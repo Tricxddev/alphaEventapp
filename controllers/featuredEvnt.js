@@ -1,32 +1,50 @@
 const {orgORGmodel,indiOrgModel,allUserModel}=require("../model/organizerDB")
 const eventModel=require("../model/eventsDB")
+const {landingtrdPagination,landingFtPagination}=require("../services/utilities")
 
 const fetureventFXN=async(req,res)=>{
     try {
-      const {limit}=landingFtPagination(req)
-      const evntty= await eventModel.find().limit(limit)
+    const {limit}=landingFtPagination(req)
+    const events = await eventModel.find().limit(limit);
+    const userIds = events.map(event => event.userID);
+    const organizers = await allUserModel.find({ userID: { $in: userIds } });
 
-      const userIds = evntty.map((event) => event.userID);
-      //console.log(userIds)
-
-      const orgZ = await allUserModel.find({ userID: { $in: userIds } });
-      //console.log(orgZ)
-          // Create a mapping of userID to organizer name for quick lookup
-      const organizerMap = orgZ.reduce((map, organizer) => {
-      map[organizer.userID] = organizer.name;
-      return map;
+    // Create a map of userID to name
+    const organizerMap = organizers.reduce((acc, org) => {
+      acc[org.userID] = org.name;
+      return acc;
     }, {});
 
-    const evnttyWithOrgNames = evntty.map((event) => ({
-      ...event._doc, // Spread event document fields
-      organizerName: organizerMap[event.userID] || "Unknown Organizer",
-    }));
+    const simplifiedData = events.map(event => {
+      const ticketPrices = Array.isArray(event.tickets)
+        ? event.tickets.map(t => t.ticketPrice)
+        : [];
 
-      
-      res.status(200).json({
-        msg:"SUCCESSFUL",
-        evntty:evnttyWithOrgNames
-      })
+      const minPrice = Math.min(...ticketPrices);
+      const maxPrice = Math.max(...ticketPrices);
+      let ticketprice = "Free";
+
+      if (ticketPrices.length > 0) {
+        ticketprice = minPrice === maxPrice
+          ? `${minPrice}`
+          : `${minPrice} - ${maxPrice}`;
+      }
+
+      return {
+        eventID: event.eventID,
+        eventTitle: event.eventTitle,
+        eventImgURL: event.eventImgURL,
+        eventDate: new Date(event.eventDate.eventEnd).toLocaleDateString("en-US"),
+        venueInformation: event.venueInformation?.address || "Not Provided",
+        ticketprice,
+        organizerName: organizerMap[event.userID] || "Unknown Organizer"
+      };
+    });
+
+    return res.status(200).json({
+      msg: "SUCCESSFUL",
+      data: simplifiedData
+    });
     } catch (error) {return res.status(400).json({msg:error.message})}
   };
   module.exports=fetureventFXN

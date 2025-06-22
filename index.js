@@ -201,6 +201,7 @@ const UNSubscribe= require("./routes/sunbscribersRout")
 const eventDetail=require("./routes/eventDetailRout")
 const organizerEvents=require("./routes/organizerEventRout")
 const trendEvnt=require("./routes/trendEventRout")
+const featuredEvnt=require("./routes/featuredEvntRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -214,6 +215,7 @@ app.use("/api",UNSubscribe);//UNSUBSCRIBE API
 app.use("/api",eventDetail);//EVENT DETAIL API
 app.use("/api",organizerEvents);//ORGANIZER EVENTS API
 app.use("/api",trendEvnt);//TRENDING EVENTS API
+app.use("/api",featuredEvnt);//FEATURED EVENTS API
 
 app.get('/userInfo', async (req, res) => {
   try {
