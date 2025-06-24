@@ -9,7 +9,7 @@ const organizersEventsFXN=async(req,res)=>{
   if(!findEvnts || findEvnts.length === 0){
     return res.status(404).json({msg:"NO MORE EVENTS FOUND FOR THIS ORGANIZER"})
   }
-  console.log("findEvnts:",findEvnts)
+  // console.log("findEvnts:",findEvnts)
   
 
   const eventsDD= await Promise.all(findEvnts.map(async(event) => {
@@ -25,7 +25,7 @@ const organizersEventsFXN=async(req,res)=>{
         month: 'numeric',
         day: 'numeric'
       }),
-      venueInformation: event.venueInformation.address,
+      venueInformation: event.venueInformation.address ? event.venueInformation.address : event.venueInformation.url,
       ticketprice:(() => {
         const prices = Array.isArray(event.tickets)
           ? event.tickets.map(ticket => ticket.ticketPrice)

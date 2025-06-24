@@ -6,7 +6,7 @@ const eventModel=require("../model/eventsDB")
 
 const creatEventFXN=async(req,res)=>{
     try {
-    console.log("params:",req.params)
+    // console.log("params:",req.params)
     const {
     eventTitle,
     eventDesc,
@@ -36,6 +36,18 @@ const creatEventFXN=async(req,res)=>{
   }=req.body;
   const {userID}=req.params;
   // console.log("userID:",userID)
+  // validate if maximumAttendees equal to total number of array of tickets(ticket quantity)
+  const maxAttdtonumber = parseInt(maximumAttendees, 10);
+
+  const totalTicketQuantity = tickets.reduce((total, ticket) => {
+    if (parseInt(ticket.quantity,10) && typeof parseInt(ticket.quantity,10) === 'number') {
+      return total + parseInt(ticket.quantity,10);
+    }
+    return total;
+  }, 0);
+  if (maxAttdtonumber !== totalTicketQuantity) {
+    return res.status(400).json({ msg: "Maximum attendees configure must equal total ticket quantity configured" });
+  } 
 
 
   const fullStartTime = `${startTime} ${startClock} `;

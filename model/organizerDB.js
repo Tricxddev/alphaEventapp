@@ -42,6 +42,14 @@ const indiOrgSchema= new mongoose.Schema({
         countryCd:{type:String/*,enum:["+1","+44","+91","+234"]*/},
         phnNum:{type:String,minlenght:8,maxlenght:11}},//phone details of organizer
     address:{type:String},//organizer address
+    bio:{type:String},//organizer bio
+    socialLinks:{
+        facebook:{type:String},
+        twitter:{type:String},
+        instagram:{type:String},
+        website:{type:String},        
+    },//social links of organizer
+    officialName:{type:String,required:true},//official name of organizer
     email:{type:String,required:true},//email details of organizer
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
     regDate:{type:Date,default:Date.now},//registration date of organizer
@@ -49,7 +57,13 @@ const indiOrgSchema= new mongoose.Schema({
     userFollowCnt:{type:Number,default:0},//followers id count of organizer
     crtdTketz:[{type:String}],//all tickets created  by organizer
     crtdTketCnt:{type:Number,default:0},//all tickets count created  by organizer
-    totalEarning:{type:Number,default:0}//all tickets sales value earned by organizer
+    totalEarning:{type:Number,default:0},//all tickets sales value earned by organizer
+    bankDetails:{
+        bankName:{type:String},//bank name of organizer
+        accountNumber:{type:String},//bank account number of organizer
+        accountHolderName:{type:String},//account holder name of organizer
+        accountType:{type:String,enum:["savings","current"]}//account type of organizer
+    }
 
 },{timestamps:true})
 
