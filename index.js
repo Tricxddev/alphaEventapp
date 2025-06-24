@@ -202,6 +202,13 @@ const eventDetail=require("./routes/eventDetailRout")
 const organizerEvents=require("./routes/organizerEventRout")
 const trendEvnt=require("./routes/trendEventRout")
 const featuredEvnt=require("./routes/featuredEvntRout")
+const orgProfile=require("./routes/orgProfileRout")
+const orgProfileUpdate=require("./routes/orgProfileRout")
+const orgChngPwDash=require("./routes/orgChngPwDashRout")
+const orgBankDetails=require("./routes/orgBankDetailRout")
+const orgBankDetailsfetch=require("./routes/orgBankDetailRout")
+const myEventDash=require("./routes/myEventDashRout")
+const myEventFetailsDash=require("./routes/myEventDashRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -216,6 +223,13 @@ app.use("/api",eventDetail);//EVENT DETAIL API
 app.use("/api",organizerEvents);//ORGANIZER EVENTS API
 app.use("/api",trendEvnt);//TRENDING EVENTS API
 app.use("/api",featuredEvnt);//FEATURED EVENTS API
+app.use("/api",orgProfile);//ORGANIZER PROFILE API
+app.use("/api",orgProfileUpdate);//ORGANIZER PROFILE UPDATE API
+app.use("/api",orgChngPwDash);//ORGANIZER CHANGE PASSWORD FRROM DASHBOARD API
+app.use("/api",orgBankDetails);//ORGANIZER BANK DETAILS API
+app.use("/api",orgBankDetailsfetch);//ORGANIZER BANK DETAILS FETCH API
+app.use("/api",myEventDash);//ORGANIZER MY EVENT DASHBOARD API
+app.use("/api",myEventFetailsDash);//ORGANIZER MY EVENT DETAILS DASHBOARD API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -319,101 +333,98 @@ app.get("/getalluserCont",async(req,res)=>{
 })
 
 
-app.post("/creatIndioRg/:userID",async(req,res)=>{
-  try {
-    const {userID}=req.params;
-    const {firstName,lastName,countryCd,phnNum,address}=req.body
-    const existingUser=await indiOrgModel.findOne({userID});
-    if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:I"})}
-    const findUser=await allUserModel.findOne({userID});
-    const regdate=new  Date()
-    const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
-    //console.log(findUser)
-    // await indiOrgModel.collection.dropIndex("orgID_1"); // Drop the index by name to handle ID error encountered while in dev.
-    indiUserCreate= await indiOrgModel.create({
-      IndName:{
-        firstName:firstName.toUpperCase(),
-        lastName:lastName.toUpperCase()},
-      phnCntkt:{
-        countryCd,
-        phnNum},
-      address,
-      email:findUser.email,
-      userID:findUser.userID,
-      regDate:regdate,
-      userFollow:[],
-      userFollowCnt:0,
-      crtdTketz:[],
-      crtdTketCnt:0,
-      totalEarning:0})    
-  const updtRole= await allUserModel.findOneAndUpdate(
-    {userID:findUser.userID},
-    {role:"organizer"},
-    {new:true})
+// app.post("/creatIndioRg/:userID",async(req,res)=>{
+//   try {
+//     const {userID}=req.params;
+//     const {firstName,lastName,countryCd,phnNum,address}=req.body
+//     const existingUser=await indiOrgModel.findOne({userID});
+//     if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:I"})}
+//     const findUser=await allUserModel.findOne({userID});
+//     const regdate=new  Date()
+//     const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
+//     //console.log(findUser)
+//     // await indiOrgModel.collection.dropIndex("orgID_1"); // Drop the index by name to handle ID error encountered while in dev.
+//     indiUserCreate= await indiOrgModel.create({
+//       IndName:{
+//         firstName:firstName.toUpperCase(),
+//         lastName:lastName.toUpperCase()},
+//       phnCntkt:{
+//         countryCd,
+//         phnNum},
+//       address,
+//       email:findUser.email,
+//       userID:findUser.userID,
+//       regDate:regdate,
+//       userFollow:[],
+//       userFollowCnt:0,
+//       crtdTketz:[],
+//       crtdTketCnt:0,
+//       totalEarning:0})    
+//   const updtRole= await allUserModel.findOneAndUpdate(
+//     {userID:findUser.userID},
+//     {role:"organizer"},
+//     {new:true})
 
-  res.status(200).json({
-    msg:"SUCCESSFULL",
-    reaDate,
-    updtRole
-  })
-  } catch (error) {return res.status(400).json({msg:error.message})}  
-})
+//   res.status(200).json({
+//     msg:"SUCCESSFULL",
+//     reaDate,
+//     updtRole
+//   })
+//   } catch (error) {return res.status(400).json({msg:error.message})}  
+// })
 
 
 
-app.post("/creat%ORGoRg/:userID",async(req,res)=>{
-  try {
-    const {userID}=req.params;
-    const {orgName,countryCd,phnNum,address}=req.body;
-    const existingUser=await orgORGmodel.findOne({userID});
-    if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:O"})};
-    const findUser=await allUserModel.findOne({userID});
-    const orgIdGen= async()=>{
-      let orgID
-      let isUnique= false
-      while(!isUnique){
-        const randMNo= await Math.floor( Math.random()*9999)
-        orgID=`ALVENT-${randMNo}-${new Date().getFullYear()}`
-        const idExist= await orgORGmodel.findOne({orgID});
-        if(!idExist) isUnique=true
-      };
-      return orgID
-    };
-    const newOrgID=await orgIdGen()
+// app.post("/creat%ORGoRg/:userID",async(req,res)=>{
+//   try {
+//     const {userID}=req.params;
+//     const {orgName,countryCd,phnNum,address}=req.body;
+//     const existingUser=await orgORGmodel.findOne({userID});
+//     if(existingUser){return res.status(409).json({msg:"USER ALREADY AN ORGANIZER:O"})};
+//     const findUser=await allUserModel.findOne({userID});
+//     const orgIdGen= async()=>{
+//       let orgID
+//       let isUnique= false
+//       while(!isUnique){
+//         const randMNo= await Math.floor( Math.random()*9999)
+//         orgID=`ALVENT-${randMNo}-${new Date().getFullYear()}`
+//         const idExist= await orgORGmodel.findOne({orgID});
+//         if(!idExist) isUnique=true
+//       };
+//       return orgID
+//     };
+//     const newOrgID=await orgIdGen()
     
-    const regdate=new  Date()
-    const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
-    orgORGUserCreate= await orgORGmodel.create({
-      orgName:orgName.toUpperCase(),
-      phnCntkt:{
-        countryCd,
-        phnNum},
-      address,
-      email:findUser.email,
-      userID:findUser.userID,
-      orgID:newOrgID,
-      regDate:regdate,
-      userFollow:[],
-      userFollowCnt:0,
-      crtdTketz:[],
-      crtdTketCnt:0,
-      totalEarning:0})
+//     const regdate=new  Date()
+//     const reaDate= await moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
+//     orgORGUserCreate= await orgORGmodel.create({
+//       orgName:orgName.toUpperCase(),
+//       phnCntkt:{
+//         countryCd,
+//         phnNum},
+//       address,
+//       email:findUser.email,
+//       userID:findUser.userID,
+//       orgID:newOrgID,
+//       regDate:regdate,
+//       userFollow:[],
+//       userFollowCnt:0,
+//       crtdTketz:[],
+//       crtdTketCnt:0,
+//       totalEarning:0})
 
-  const updtRole= await allUserModel.findOneAndUpdate({
-    userID:findUser.userID},
-    {role:"organizer"},
-    {new:true});
-  //console.log(req)
-  res.status(200).json({
-    msg:"SUCCESSFULL",
-    reaDate,
-    orgORGUserCreate
-  })} catch (error) {return res.status(400).json({msg:error.message})}
+//   const updtRole= await allUserModel.findOneAndUpdate({
+//     userID:findUser.userID},
+//     {role:"organizer"},
+//     {new:true});
+//   //console.log(req)
+//   res.status(200).json({
+//     msg:"SUCCESSFULL",
+//     reaDate,
+//     orgORGUserCreate
+//   })} catch (error) {return res.status(400).json({msg:error.message})}
 
-});
-
-
-
+// });
 
 
   //GET USER NAME FOR GOOGLE AUTH PURPOSE

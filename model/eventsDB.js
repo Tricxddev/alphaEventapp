@@ -95,6 +95,8 @@ const eventSchema = new mongoose.Schema({
     orgID: {type:mongoose.Schema.Types.ObjectId,ref:"orgORGmodel"},
     userID: {type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
     organizerName: {type: String},
+    ticketsSold: { type: Number, default: 0 },
+    ticketIDs: [{ type:String , unique: true }], // Unique ticket IDs for each ticket sold
    
     // createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 }, { timestamps: true });
