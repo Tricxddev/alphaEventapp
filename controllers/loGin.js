@@ -1,4 +1,5 @@
 const {orgORGmodel,indiOrgModel,allUserModel}=require("../model/organizerDB")
+const sessionModel=require("../model/sessiosDB")
 const bcrypt=require("bcrypt")
 const moment=require("moment")
 const jwt=require("jsonwebtoken")
@@ -7,7 +8,7 @@ const jwt=require("jsonwebtoken")
 const loginFXN=async(req,res)=>{
     try{
     const{email,passWd}=req.body
-    console.log('payloadPPP:',req.body)
+    // console.log('payloadPPP:',req.body)
 
     if (!email || !passWd) {
         return res.status(400).json({ msg: "All fields are required" });
@@ -40,6 +41,19 @@ const loginFXN=async(req,res)=>{
         process.env.refresTk,
         { expiresIn: '1h' },
       );
+    const gensessionID = function generateSessionID() {
+      return Math.floor(Math.random() * 10000);
+    };
+    while (await sessionModel.findOne({ sessionID: gensessionID })) {
+      gensessionID(); // Ensure the session ID is unique
+    }
+    const sessionID = gensessionID();
+    const updateSession=await sessionModel.create({
+      sessionID:sessionID,
+      userID:existinUser.userID,
+      sessToken:token,
+      loginRoute:"manual"
+    })
   
     const datexepl= await moment(updlastLogin.lastLogin).format('MMMM Do YYYY, h:mm:ss a')
     res.status(200).json({

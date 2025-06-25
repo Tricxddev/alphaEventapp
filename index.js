@@ -169,7 +169,7 @@ app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'em
 // Google OAuth callback route
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
+  async(req, res) => {
     try {
     const user=req.user;
     if (!user) throw new Error('User authentication failed.');
@@ -178,6 +178,20 @@ app.get('/auth/google/callback',
       process.env.refresTk,
       { expiresIn: '1h' },
     );
+    const gensessionID = function generateSessionID() {
+      return Math.floor(Math.random() * 10000);
+    };
+    while (await sessionModel.findOne({ sessionID: gensessionID })) {
+      gensessionID(); // Ensure the session ID is unique
+    }
+    const sessionID = gensessionID();
+    const updateSession=await sessionModel.create({
+      sessionID:sessionID,
+      userID:existinUser.userID,
+      sessToken:token,
+      loginRoute: 'google'
+    })
+  
     // Successful authentication, redirect to your desired route
    res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
    //res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
@@ -209,6 +223,8 @@ const orgBankDetails=require("./routes/orgBankDetailRout")
 const orgBankDetailsfetch=require("./routes/orgBankDetailRout")
 const myEventDash=require("./routes/myEventDashRout")
 const myEventFetailsDash=require("./routes/myEventDashRout")
+const supportCall=require("./routes/supportCallRout")
+//const supportCallupdate=require("./routes/supportCallRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -230,6 +246,8 @@ app.use("/api",orgBankDetails);//ORGANIZER BANK DETAILS API
 app.use("/api",orgBankDetailsfetch);//ORGANIZER BANK DETAILS FETCH API
 app.use("/api",myEventDash);//ORGANIZER MY EVENT DASHBOARD API
 app.use("/api",myEventFetailsDash);//ORGANIZER MY EVENT DETAILS DASHBOARD API
+app.use("/api",supportCall);//SUPPORT CALL API
+//app.use("/api",supportCallupdate);//SUPPORT CALL UPDATE API
 
 app.get('/userInfo', async (req, res) => {
   try {
