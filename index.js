@@ -184,6 +184,7 @@ app.get('/auth/google/callback',
     while (await sessionModel.findOne({ sessionID: gensessionID })) {
       gensessionID(); // Ensure the session ID is unique
     }
+    const existinUser = await allUserModel.findOne({email:user.email})
     const sessionID = gensessionID();
     const updateSession=await sessionModel.create({
       sessionID:sessionID,
