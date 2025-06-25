@@ -225,6 +225,8 @@ const myEventDash=require("./routes/myEventDashRout")
 const myEventFetailsDash=require("./routes/myEventDashRout")
 const supportCall=require("./routes/supportCallRout")
 //const supportCallupdate=require("./routes/supportCallRout")
+const totalRevnTikbyOrgRout=require("./routes/totalRevnTikbyOrgRout")
+const dashboardsales=require("./routes/dashbdsalesperfRout")
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -247,7 +249,9 @@ app.use("/api",orgBankDetailsfetch);//ORGANIZER BANK DETAILS FETCH API
 app.use("/api",myEventDash);//ORGANIZER MY EVENT DASHBOARD API
 app.use("/api",myEventFetailsDash);//ORGANIZER MY EVENT DETAILS DASHBOARD API
 app.use("/api",supportCall);//SUPPORT CALL API
-//app.use("/api",supportCallupdate);//SUPPORT CALL UPDATE API
+//app.use("/api",supportCallupdate);//SUPPORT CALL UPDATE API 
+app.use("/api",totalRevnTikbyOrgRout);//TOTAL REVENUE AND TICKET COUNT BY ORGANIZER API
+app.use("/api",dashboardsales);// SALES PERFORMANCE DASHBOARD VIEW API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -290,6 +294,9 @@ app.get('/userInfo', async (req, res) => {
 // app.get('/dashboard',ensureAuth,(req,res)=>{
 //   res.send(`hello,${req.user.displayName}`)
 // })
+
+//ensureAuth - middleware to protect the route
+//Monthly sales performance
 
 
 
@@ -479,96 +486,61 @@ app.get("/getalluserCont",async(req,res)=>{
     })
   })
   //GET TICKET REVENUE
-  app.get('/orGTicketRev/:userEmail',async(req,res)=>{
-    const{userEmail}=req.params
+  // app.get('/orGTicketRev/:userEmail',async(req,res)=>{
+  //   const{userEmail}=req.params
     
-    try {
-      // Search in indiOrgModel
-      const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
-     // console.log("userEmail:",findIndiUser)
+  //   try {
+  //     // Search in indiOrgModel
+  //     const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
+  //    // console.log("userEmail:",findIndiUser)
 
-      if (findIndiUser) {
-        //console.log("found in indUser")
-        return res.status(200).json({
-          msg: "SUCCESSFUL",
-          totalRevenue: findIndiUser.totalEarning
-        })}else{console.log("found in Orguser")}
+  //     if (findIndiUser) {
+  //       //console.log("found in indUser")
+  //       return res.status(200).json({
+  //         msg: "SUCCESSFUL",
+  //         totalRevenue: findIndiUser.totalEarning
+  //       })}else{console.log("found in Orguser")}
 
-      // Search in orgORGmodel
-      const findOrgUser = await orgORGmodel.findOne({ email: userEmail });
+  //     // Search in orgORGmodel
+  //     const findOrgUser = await orgORGmodel.findOne({ email: userEmail });
   
-      if (findOrgUser) {
-        //console.log("found in Orguser")
-        return res.status(200).json({
-          msg: "SUCCESSFUL",
-          totalRevenue: findOrgUser.totalEarning
-        })}else{console.log("found in indUser")}
+  //     if (findOrgUser) {
+  //       //console.log("found in Orguser")
+  //       return res.status(200).json({
+  //         msg: "SUCCESSFUL",
+  //         totalRevenue: findOrgUser.totalEarning
+  //       })}else{console.log("found in indUser")}
       
   
-      // If no user found in either model
-      return res.status(404).json({
-        msg: "User not found"
-      });
+  //     // If no user found in either model
+  //     return res.status(404).json({
+  //       msg: "User not found"
+  //     });
   
-    } catch (error) {
-      console.error("Error fetching ticket revenue:", error);
-      return res.status(500).json({
-        msg: "Server Error",
-        error: error.message,
-      });}
-  });
+  //   } catch (error) {
+  //     console.error("Error fetching ticket revenue:", error);
+  //     return res.status(500).json({
+  //       msg: "Server Error",
+  //       error: error.message,
+  //     });}
+  // });
 
   //GET TOTAL TICKET COUNT ORGANIZER WISE
-  app.get('/totTikContDisp/:userEmail',async(req,res)=>{
-    try{
-    const{userEmail}=req.params
-    //const findUserMail= await allUserModel.findOne({email:userEmail})
-    const findUserId= "6737745be3d1857286917723"//await findUserMail.userID
-    const ticketsSold= await ticktModel.countDocuments({orgID:findUserId})
+  // app.get('/totTikContDisp/:userEmail',async(req,res)=>{
+  //   try{
+  //   const{userEmail}=req.params
+  //   //const findUserMail= await allUserModel.findOne({email:userEmail})
+  //   const findUserId= "6737745be3d1857286917723"//await findUserMail.userID
+  //   const ticketsSold= await ticktModel.countDocuments({orgID:findUserId})
     
-    res.status(200).json({
-      msg:"SUCCESSFULL",
-      ticketsSold
-    })}catch(error){res.status(400).json({msg:error.message})}
+  //   res.status(200).json({
+  //     msg:"SUCCESSFULL",
+  //     ticketsSold
+  //   })}catch(error){res.status(400).json({msg:error.message})}
 
-  })
-
-
+  // })
 
 
-//GET TOTAL REVENUE ORGANIZER WISE
-app.get('/orGTotRev/:userEmail',async(req,res)=>{
-  const {userEmail}=req.params
-  const findUser= await allUserModel.findOne({email:userEmail})
-  if(!findUser){
-    return res.status(404).json({msg:"UNKNOWN USER"})
-  };
-  const eventID = await eventModel.find({ orgID: findUser.userID }).distinct('eventID');
-  if(eventID.length === 0){
-    return res.status(200).json({
-      msg:"NO EVENT CREATED YET",
-      data:0
-    });
-  }
-  const tickets = await ticktModel.find({ eventID: { $in: eventID } });
-  const priceMap = {};
-  tickets.forEach(ticket => { priceMap[ticket.ticketID]= {type:ticket.tickeType, price:ticket.ticketPrice}});
-  const ticketIDS = Object.keys(priceMap)
-
-  const soldTickets = await eventModel.find({ eventID: { $in: eventID } })
-  const totalSoldTickets = soldTickets.reduce((acc, soldTickets) => {
-    return acc + (soldTickets.ticketsSold || 0);
-  })
-  soldTickets.forEach(ticket => {
-    const {price} = priceMap[ticket.ticketID] || {};
-    totalRevenue += price || 0;
-  });
-  console.log(`Total Revenue for ${findUser.name}:${totalRevenue}`);
-  res.status(200).json({
-    msg:"SUCCESSFUL",
-    totalRevenue
-  });
-});
 //TICKETING
   app.post("/tickzCrt/:eventID",async(req,res)=>{
     try {
