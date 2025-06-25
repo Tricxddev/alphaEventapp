@@ -6,6 +6,7 @@ const sessionSchema=new mongoose.Schema({
     sessionID:{type:String,required:true},
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
     sessToken:{type:String,required:true},
+    loginRoute:{type:String,required:true,enum:['manual','google','facebook','apple']}
     //refrshTkn:{type:String,required:true}
 },{timestamps:true})
 
