@@ -49,7 +49,7 @@ const indiOrgSchema= new mongoose.Schema({
         instagram:{type:String},
         website:{type:String},        
     },//social links of organizer
-    officialName:{type:String,required:true},//official name of organizer
+    officialName:{type:String},//official name of organizer
     email:{type:String,required:true},//email details of organizer
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
     regDate:{type:Date,default:Date.now},//registration date of organizer

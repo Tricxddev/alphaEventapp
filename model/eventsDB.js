@@ -92,7 +92,7 @@ const eventSchema = new mongoose.Schema({
     eventImgURL: { type: String, }, // Cloudinary Image URL
     subscribers: [{ type: mongoose.Schema.Types.ObjectId, ref: "Subscriber" }],
     clicks: { type: Number, default: 0 },
-    orgID: {type:mongoose.Schema.Types.ObjectId,ref:"orgORGmodel"},
+    orgID: {type:mongoose.Schema.Types.ObjectId,ref:"indiOrgModel"},
     userID: {type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
     organizerName: {type: String},
     ticketsSold: { type: Number, default: 0 },
