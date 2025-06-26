@@ -662,7 +662,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
           });
         }
       } else {
-        
+
         for (let i = 0; i < qty; i++) {
         const ticketID2 = await genTicketID();
         paidTickets.push({
@@ -681,12 +681,11 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     return res.status(200).json({
       msg: "Tickets processed",
       calculatedTotal,
-      freeTickets,
-      paidTickets
+      free:freeTickets,
+      paid:paidTickets
     });
 
   } catch (error) {
-    console.error(error);
     return res.status(500).json({ msg: "Server error", error: error.message });
   }
 });

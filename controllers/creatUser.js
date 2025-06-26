@@ -11,8 +11,6 @@ const creatUserFXN=async(req,res)=>{
       const findUser=await allUserModel.findOne({userID});
       const regdate=new  Date()
       const reaDate=  moment(regdate).format('MMMM Do YYYY, h:mm:ss a');
-      //console.log(findUser)
-      // await indiOrgModel.collection.dropIndex("orgID_1"); // Drop the index by name to handle ID error encountered while in dev.
       indiUserCreate= await indiOrgModel.create({
         IndName:{
           firstName:firstName.toUpperCase(),
