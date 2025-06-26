@@ -37,19 +37,19 @@ const allUserSchema= new mongoose.Schema({
 const indiOrgSchema= new mongoose.Schema({
     IndName:{
         firstName:{type:String,required:true},
-        lastName:{type:String}},//name of individual as an organizer
+        lastName:{type:String}},
     phnCntkt:{
         countryCd:{type:String/*,enum:["+1","+44","+91","+234"]*/},
-        phnNum:{type:String,minlenght:8,maxlenght:11}},//phone details of organizer
-    address:{type:String},//organizer address
-    bio:{type:String},//organizer bio
+        phnNum:{type:String,minlenght:8,maxlenght:11}},
+    address:{type:String},
+    bio:{type:String},
     socialLinks:{
         facebook:{type:String},
         twitter:{type:String},
         instagram:{type:String},
         website:{type:String},        
-    },//social links of organizer
-    officialName:{type:String},//official name of organizer
+    },
+    officialName:{type:String},
     email:{type:String,required:true},//email details of organizer
     userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
     regDate:{type:Date,default:Date.now},//registration date of organizer
