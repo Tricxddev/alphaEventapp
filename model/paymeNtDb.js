@@ -9,8 +9,8 @@ const paymentSchema= new mongoose.Schema({
       _id: { type: mongoose.Schema.Types.ObjectId, required: true },
       ticketType:{type:String,required:true,enum:["Regular","VIP","Early Bird"]},
     //   ticketPrice: { type: Number, required: true },
-      ticketID: String,
-      quantity: Number
+      ticketID: {type:String},
+      quantity: {type:Number}
     }
   ],
     email: {type: String,required: true},
