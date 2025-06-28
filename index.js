@@ -655,8 +655,8 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     const findevntID = await eventModel.findOne({ eventID });
     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
 
-    const geteventCapacity=  findevntID.eventCapacity
-    const event=await eventModel.findOne({eventID:txn.eventID})
+    const geteventCapacity= await  findevntID.eventCapacity
+    const event=await eventModel.findOne({eventID})
     const tiketsold=event.ticketsSold
 
     if(tiketsold>geteventCapacity ||tiketsold === geteventCapacity ){
@@ -676,18 +676,19 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     let calculatedTotal = 0;
 
     for (const ticket of tickets) {
+      const findevntID = await eventModel.findOne({ eventID });
       const ticketDetails = findevntID.tickets.find(t => t._id.toString() === ticket._id);
       const totalQty = tickets.reduce((sum, ticket) => sum + (ticket.quantity), 0);
-      const findevntID = await eventModel.findOne({ eventID });
+      
       if (!findevntID) return res.status(404).json({ msg: "Event not found" });
 
       const geteventCapacity=  findevntID.eventCapacity
-      const event=await eventModel.findOne({eventID:txn.eventID})
+      const event=await eventModel.findOne({eventID:findevntID.eventID})
       const tiketsold=event.ticketsSold
       if (!ticketDetails) return res.status(400).json({ msg: `Ticket ID ${ticket._id} not found` });
-      if(tiketsold+totalQty > geteventCapacity){
-        return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
-      }
+      // if(tiketsold+totalQty > geteventCapacity){
+      //   return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
+      // }
 
       const qty = parseInt(ticket.quantity) || 1;
       const price = ticketDetails.ticketPrice;
@@ -945,7 +946,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
       .update(JSON.stringify(req.body))
       .digest('hex');
-
+    console.log(signature)
     // Uncomment this in production!
     // if (hash !== signature) return res.sendStatus(401);
 
