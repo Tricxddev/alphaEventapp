@@ -1014,33 +1014,35 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
 
-    //  Step 1: Validate signature
+    //  Validate signature
     const hash = crypto
       .createHmac('sha512', secret)
       .update(JSON.stringify(req.body))
       .digest('hex');
 
     if (hash !== req.headers['x-paystack-signature']) {
+       console.log(" InValid Paystack webhook received:", req.body.event);
       return res.sendStatus(401); // Unauthorized
-    }
+      
+    }else{ console.log("Valid Paystack webhook received:", req.body.event);}
 
-    //  Step 2: Check event type and status
+    //   Check event type and status
     const event = req.body;
     const { reference, status } = event.data;
     if (event.event !== "charge.success" || status !== "success") {
       return res.sendStatus(200); // Nothing to process
     }
 
-    // Step 3: Find payment by reference
+    //  Find payment by reference
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
     if (txn.paymentStatus === "completed") return res.sendStatus(200); // Already processed
 
-    //  Step 4: Get event document
+    //   Get event document
     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
 
-    //  Step 5: Prepare and save issued tickets
+    //   Prepare and save issued tickets
     const ticketData = txn.tickets.map(t => ({
       _id: t._id,
       ticketType: t.ticketType,
@@ -1059,12 +1061,12 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
 
     await ticketDoc.save();
 
-    // ✅ Step 6: Mark payment as completed
+    //  Mark payment as completed
     txn.paymentStatus = "completed";
     txn.trnsctnDT = new Date();
     await txn.save();
 
-    // ✅ Step 7: Update overall ticketsSold
+    //  Update overall ticketsSold
     const geteventCapacity = findevntID.eventCapacity;
     const getticketIssuedcount = await ticktModel.countDocuments({
       eventID: txn.eventID,
@@ -1078,7 +1080,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       );
     }
 
-    // ✅ Step 8: Update sold count per ticket type (assumes `sold` field exists in event tickets)
+    // Update sold count per ticket type (assumes `sold` field exists in event tickets)
     for (const purchased of txn.tickets) {
       await eventModel.updateOne(
         {
@@ -1093,7 +1095,9 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       );
     }
 
+    console.log(`Transaction processed successfully for:${email}`);
     res.sendStatus(200); // Success
+    
 
   } catch (err) {
     console.error("Webhook error:", err.message);
@@ -1111,8 +1115,7 @@ app.get("/ticket-details/:reference/:email", async (req, res) => {
 
   const tickets = await ticktModel.find({ eventID: txn.eventID, email});
   return res.status(200).json({ 
-    free:tickets[0],
-    paid:tickets[1]
+  tickets
   });
 });
 
