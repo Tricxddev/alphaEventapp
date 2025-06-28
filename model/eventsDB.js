@@ -85,7 +85,7 @@ const eventSchema = new mongoose.Schema({
         },
         ticketPrice: { type: Number,   },
         quantity: { type: Number   },
-        sold:{type: Number}
+        sold:{type: Number,default:0}
         }
     ],
     

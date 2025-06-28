@@ -1021,8 +1021,10 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       .digest('hex');
 
     if (hash !== req.headers['x-paystack-signature']) {
+       console.log(" InValid Paystack webhook received:", req.body.event);
       return res.sendStatus(401); // Unauthorized
-    }
+      
+    }else{ console.log("Valid Paystack webhook received:", req.body.event);}
 
     //   Check event type and status
     const event = req.body;
@@ -1093,8 +1095,9 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       );
     }
 
+    console.log(`Transaction processed successfully for:${email}`);
     res.sendStatus(200); // Success
-    console.log("res:",res.sendStatus(200))
+    
 
   } catch (err) {
     console.error("Webhook error:", err.message);
