@@ -41,6 +41,8 @@ const { execFileSync } = require("child_process");
 const { type } = require("os");
 //const landingFtPagination=require("./services/utilities")
 require("./services/autoMailerSheduler")//for monthly event digest
+const paymentModel=require("./model/paymeNtDb")
+// const verifyPaystackSignature=require("./middleware/verifyPaystackSignature")
 
 //CONFIGS
 const corsOptions = {
@@ -541,6 +543,11 @@ app.get("/getalluserCont",async(req,res)=>{
 
   // })
 //BUY TICKET-PAYSTACK INITIATE ------PENDING
+
+
+
+
+
 // app.post("/buyTicket-initiate/:eventID", async (req, res) => {
 //   try {
 //     const { eventID } = req.params;
@@ -555,62 +562,87 @@ app.get("/getalluserCont",async(req,res)=>{
 //       return res.status(404).json({ msg: "Event not found" });
 //     }
 
-//     // Calculate totalCost
-//     let totalCost = 0;
+//     const { nanoid } = await import('nanoid');
+//     const createDT = new Date().toISOString().replace(/[-:.TZ]/g, '');
+//     const findORGID = await indiOrgModel.findOne({ userID: findevntID.userID });
+
+//     const genTicketID = async () => {
+//       const prefix = findORGID?.IndName?.firstName?.slice(0, 3).toUpperCase() || "ALV";
+//       return `${prefix}-${createDT}-${nanoid(7)}`;
+//     };
+
+//     const freeTickets = [];
+//     const paidTickets = [];
+//     let calculatedTotal = 0;
+
 //     for (const ticket of tickets) {
-//       const matchTicket = findevntID.tickets.find(t => t._id.toString() === ticket._id);
-//       if (!matchTicket) {
-//         return res.status(400).json({ msg: `Ticket ID ${ticket._id} not found in event` });
-//       }
-//       totalCost += matchTicket.ticketPrice * parseInt(ticket.quantity);
-//     }
+//       const ticketDetails = findevntID.tickets.find(t => t._id.toString() === ticket._id);
+//       const qty = parseInt(ticket.quantity) || 1;
+//       const price = ticketDetails.ticketPrice;
 
-//     // Check if total matches frontend amount
-//     if (totalCost !== parseInt(totalPurchase, 10)) {
-//       return res.status(400).json({ msg: "Total cost does not match the purchase amount" });
-//     }
+//       calculatedTotal += price * qty;
 
-//     // IF TOTAL IS 0: generate ticketIDs
-//     if (totalCost === 0 ||) {
-//       const { nanoid } = await import('nanoid');
-//       const createDT = new Date().toISOString().replace(/[-:.TZ]/g, '');
-//       const findORGID = await indiOrgModel.findOne({ userID: findevntID.userID });
 
-//       const genTicketID = async () => {
-//         const prefix = findORGID?.IndName?.firstName?.slice(0, 3).toUpperCase() || "ALV";
-//         return `${prefix}-${createDT}-${nanoid(7)}`;
-//       };
+//       for (let i = 0; i < qty; i++) {
+//         const ticketID = await genTicketID();
+//         const ticketPayload = {
+//           _id: ticket._id,
+//           ticketID,
+//           quantity: 1,
+//           ticketPrice:ticket.ticketPrice
+//         };
 
-//       const payloadTickets = [];
-
-//       for (const ticket of tickets) {
-//         const qty = parseInt(ticket.quantity);
-//         for (let i = 0; i < qty; i++) {
-//           const ticketID = await genTicketID();
-//           payloadTickets.push({
-//             ticketTypeID: ticket._id,
-//             ticketID,
-//             quantity: 1
-//           });
+//         if (price === 0) {
+//           freeTickets.push(ticketPayload);
+//         } else {
+//           paidTickets.push(ticketPayload);
 //         }
 //       }
+//     }
+//       // console.log(calculatedTotal)
+//       if (calculatedTotal !== parseInt(totalPurchase, 10)) {
+//         return res.status(400).json({ msg: "Total cost does not match the purchase amount" });
+//       }
+//     const response = await axios.post(
+//           "https://api.paystack.co/transaction/initialize",
+//           {
+//             email:email,
+//             amount:totalPurchase * 100,
+//             //callback_url: "http://localhost:5000/payment-success",
+//           },
+//           {
+//             headers: {
+//               Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+//               "Content-Type": "application/json",
+//             },
+//           }
+//         );
+
+//         if (!response.data.status) {
+//           return res.status(400).json({ msg: "Failed to initialize payment" });
+//         }
+//       const ticketTxn= new paymentModel({
+//         paymentID: response.data.reference,
+//         tickets:paidTickets,
+//         email,
+//         totalPurchase,
+//         trnsctnDT: new Date()
+//       })
+//       const saveticketTxn= await ticketTxn.save()
 
 //       return res.status(200).json({
-//         msg: "SUCCESSFUL",
-//         totalCost,
-//         ticketData: payloadTickets
-//       });
-//     }
-
-//     // If totalCost !== 0, proceed with payment init (not implemented here)
-//     return res.status(200).json({
-//       msg: "SUCCESFUL",
-//       totalCost
+//       msg: "Tickets processed",
+//       calculatedTotal,
+//       res:response.data,
+//       authorization_url:response.data.authorization_url,
+//       reference:response.data.reference,
+//       // freeTickets,
+//       // paidTickets
 //     });
 
 //   } catch (error) {
 //     console.error(error);
-//     return res.status(500).json({ msg: "Server Error", error: error.message });
+//     return res.status(500).json({ msg: "Server error", error: error.message });
 //   }
 // });
 app.post("/buyTicket-initiate/:eventID", async (req, res) => {
@@ -618,13 +650,17 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     const { eventID } = req.params;
     const { tickets, email, totalPurchase } = req.body;
 
-    if (!eventID || !tickets || !email) {
-      return res.status(400).json({ msg: "Event ID, tickets, and email are required" });
-    }
+    //if (!eventID || !tickets || !email) return res.status(400).json({ msg: "Missing required fields" });
 
     const findevntID = await eventModel.findOne({ eventID });
-    if (!findevntID) {
-      return res.status(404).json({ msg: "Event not found" });
+    if (!findevntID) return res.status(404).json({ msg: "Event not found" });
+
+    const geteventCapacity=  findevntID.eventCapacity
+    const event=await eventModel.findOne({eventID:txn.eventID})
+    const tiketsold=event.ticketsSold
+
+    if(tiketsold>geteventCapacity ||tiketsold === geteventCapacity ){
+      return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
     }
 
     const { nanoid } = await import('nanoid');
@@ -635,140 +671,384 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       const prefix = findORGID?.IndName?.firstName?.slice(0, 3).toUpperCase() || "ALV";
       return `${prefix}-${createDT}-${nanoid(7)}`;
     };
-
-    const freeTickets = [];
-    const paidTickets = [];
+    let freeTickets = [];
+    let paidTickets = [];
     let calculatedTotal = 0;
 
     for (const ticket of tickets) {
       const ticketDetails = findevntID.tickets.find(t => t._id.toString() === ticket._id);
-      if (!ticketDetails) {
-        return res.status(400).json({ msg: `Ticket ID ${ticket._id} not found in event` });
+      const totalQty = tickets.reduce((sum, ticket) => sum + (ticket.quantity), 0);
+      const findevntID = await eventModel.findOne({ eventID });
+      if (!findevntID) return res.status(404).json({ msg: "Event not found" });
+
+      const geteventCapacity=  findevntID.eventCapacity
+      const event=await eventModel.findOne({eventID:txn.eventID})
+      const tiketsold=event.ticketsSold
+      if (!ticketDetails) return res.status(400).json({ msg: `Ticket ID ${ticket._id} not found` });
+      if(tiketsold+totalQty > geteventCapacity){
+        return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
       }
 
-      const qty = parseInt(ticket.quantity);
+      const qty = parseInt(ticket.quantity) || 1;
       const price = ticketDetails.ticketPrice;
-
       calculatedTotal += price * qty;
-      console.log("calculatedTotal:",calculatedTotal)
 
-      if (price === 0) {
-        for (let i = 0; i < qty; i++) {
-          const ticketID = await genTicketID();
-          freeTickets.push({
-            ticketTypeID: ticket._id,
-            ticketID,
-            quantity: 1
-          });
-        }
-      } else {
-
-        for (let i = 0; i < qty; i++) {
-        const ticketID2 = await genTicketID();
-        paidTickets.push({
-          ticketTypeID: ticket._id,
-          ticketID:ticketID2,
+      for (let i = 0; i < qty; i++) {
+        const ticketID = await genTicketID();
+        const ticketPayload = {
+          _id: ticket._id,
+          ticketID,
+          ticketType:ticket.ticketType,
           quantity: 1,
           unitPrice: price
-        });}
+        };
+
+        if (price === 0) freeTickets.push(ticketPayload);
+        else paidTickets.push(ticketPayload);
       }
     }
 
-    if (calculatedTotal !== parseInt(totalPurchase, 10)) {
-      return res.status(400).json({ msg: "Total cost does not match the purchase amount" });
+    if (calculatedTotal !== parseInt(totalPurchase)) {
+      return res.status(400).json({ msg: "Total cost mismatch" });
     }
 
-    return res.status(200).json({
-      msg: "Tickets processed",
-      calculatedTotal,
-      free:freeTickets,
-      paid:paidTickets
-    });
+    if (calculatedTotal === 0) {
+      await ticktModel.insertMany(freeTickets);
+      return res.status(200).json({ msg: "Free tickets issued", tickets: freeTickets });
+    }
+      if (calculatedTotal !== parseInt(totalPurchase, 10)) {
+        return res.status(400).json({ msg: "Total cost does not match the purchase amount" });
+      }
+    const response = await axios.post("https://api.paystack.co/transaction/initialize",
+      {
+        email,
+        amount: calculatedTotal * 100,
+        callback_url: "https://yourdomain.com/paystack/callback"
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          "Content-Type": "application/json"
+        }
+      });
 
+    if (!response.data.status) return res.status(400).json({ msg: "Failed to initialize payment" });
+
+    const ticketTxn = new paymentModel({
+      paymentID: response.data.data.reference,
+      eventID,
+      email,
+      tickets: paidTickets,
+      totalPurchase: calculatedTotal,
+      trnsctnDT: new Date()
+    });
+    await ticketTxn.save();
+     const ticketTxnforTKmodel = new ticktModel({
+      eventID,
+      email,
+      userId:findevntID.userID,
+      tickets: freeTickets,
+      totalPurchase: 0,
+      purchaseDate: new Date()
+    });
+    await ticketTxnforTKmodel.save();
+
+
+    return res.status(200).json({
+      msg: "Redirect to Paystack",
+      authorization_url: response.data.data.authorization_url,
+      reference: response.data.data.reference
+    });
   } catch (error) {
+    console.error(error);
     return res.status(500).json({ msg: "Server error", error: error.message });
   }
 });
 
+// app.post("/paystack/webhook", express.json(), async (req, res) => {
+//   const signature = req.headers['x-paystack-signature'];
+//   const crypto = require('crypto');
+//   const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+//     .update(JSON.stringify(req.body))
+//     .digest('hex');
+//   // Comment this only in dev/testing, NOT in production!
+
+//   // if (hash !== signature) return res.sendStatus(401);
+
+//   const { reference, status } = req.body.data;
+//   if (status !== "success") return res.sendStatus(200);
+
+//   const txn = await paymentModel.findOne({paymentID: reference });
+//   if (!txn) return res.sendStatus(404);
+//   if (txn.paymentStatus === "completed") return res.sendStatus(200);
 
 
-//TICKETING
-  app.post("/tickzCrt/:eventID",async(req,res)=>{
-    try {
-      const{eventID}=req.params;
-     // console.log("ticketeventid:",eventID)
-    if(!eventID){
-      return res.status(400).json({msg:"Event ID is required"})
-    }
+//   const ticketData = txn.tickets.map(t => {
+//       const ticketDef = txn.tickets.find(x => x._id.toString() === t._id.toString());
+//       return {
+//         _id: t._id,
+//         ticketType: ticketDef.ticketType,
+//         ticketID: t.ticketID,
+//         quantity: t.quantity
+//       };
+//     });
+//     console.log(ticketData)
+//     const findevntID = await eventModel.findOne({ eventID:txn.eventID });
+//     const ticketDoc = new ticktModel({
+//       paymentID: reference,
+//       tickets: ticketData,
+//       eventID: txn.eventID,
+//       email: txn.email,
+//       userId: findevntID.userID,
+//       // orgID: org._id,
+//       purchaseDate: new Date()
+//     });
 
-    const {nanoid}= await  import('nanoid');
-    const findevntID= await eventModel.findOne({eventID})
-    if(!findevntID){
-      res.status(400).json({msg:"UNKNOWN ACTION"})  
-    };
-    const findORGID=await orgORGmodel.findOne({orgID:findevntID.orgID})
-    //console.log(findevntID)
-    const useID= findORGID? findORGID.userID :null;
+//     await ticketDoc.save();
 
-    const genTicketID= async()=>{
-      if(findORGID){
-        const spltORGNm= findORGID.orgName.slice(0,3).toUpperCase()
-        return  `${spltORGNm}-${nanoid(7).toUpperCase()}`;
-      }else{
-         return  `ALV-${nanoid(7).toUpperCase()}`;
-      }}
+//     txn.paymentStatus = "completed";
+//     txn.trnsctnDT = new Date();
+//     await txn.save();
+//     const geteventCapacity= await findevntID.eventCapacity
+//     const event=await eventModel.findOne({eventID:txn.eventID})
+//     const tiketsold=event.ticketsSold
+//     if(geteventCapacity > tiketsold){
+//           const getticketIssuedcount= await ticktModel.countDocuments({ eventID: txn.eventID, email})
+//           const updateTksold= await eventModel.findOneAndUpdate(
+//             {eventID:txn.eventID},{
+//               $set:{
+//                 ticketsSold:getticketIssuedcount
+//               }
+//             }
+//           )
 
-      const idUserEVNT= findevntID.userID;
-      const idTicktType=findevntID.tickeType;
-      const ticktPRICe=findevntID.ticketPrice;
-      const ticketID= await genTicketID()
+//     }
+//     //const event = await eventModel.findOne({ eventID: txn.eventID });
+//     if (!event) return res.status(404).json({ msg: "Event not found" });
 
-      //console.log(ticketID)
+//     const updatedTickets = event.tickets.map(ticket => {
+//     const matchedTxnTicket = txn.tickets.find(t => t.ticketType === ticket.ticketType);
+//     if (matchedTxnTicket) {
+//     const newQty = (ticket.quantity || 0) - (matchedTxnTicket.quantity || 0);
+//     return {
+//       ...ticket,
+//       quantity: newQty >= 0 ? newQty : 0 // Ensure it doesn't go below 0
+//     };
+//     }
+//     return ticket;
+//   });
 
-     const newTicket = new ticktModel({
-      ticketID:ticketID,
-      eventID:findevntID.eventID,
-      orgID:useID,
-      userId:idUserEVNT.userID,
-      tickeType:idTicktType,
-      ticketPrice:ticktPRICe,
-      purchaseDate: new Date()
-    })
-
-    await newTicket.save()
-    res.status(200).json({
-      msg:"SUCESSFULL",
-      newTicket
-    })      
-    } catch (error) {return res.status(400).json({msg:error.message})}
-  })
+// await eventModel.updateOne(
+//   { eventID: txn.eventID },
+//   { $set: { tickets: updatedTickets } }
+// );
 
 
-//STRIPE API
-app.post("/create-payment-intent", async (req, res) => {
+//   res.sendStatus(200);
+// });
+
+
+
+// app.post("/paystack/webhook", express.json(), async (req, res) => {
+//   try {
+//     const signature = req.headers['x-paystack-signature'];
+//     const crypto = require('crypto');
+//     const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+//       .update(JSON.stringify(req.body))
+//       .digest('hex');
+
+//     // Uncomment this in production!
+//     // if (hash !== signature) return res.sendStatus(401);
+
+//     const { reference, status } = req.body.data;
+//     if (status !== "success") return res.sendStatus(200);
+
+//     const txn = await paymentModel.findOne({ paymentID: reference });
+//     if (!txn) return res.sendStatus(404);
+//     if (txn.paymentStatus === "completed") return res.sendStatus(200);
+
+//     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
+//     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
+
+//     // Build ticket data
+//     const ticketData = txn.tickets.map(t => ({
+//       _id: t._id,
+//       ticketType: t.ticketType,
+//       ticketID: t.ticketID,
+//       quantity: t.quantity
+//     }));
+
+//     // Save issued ticket
+//     const ticketDoc = new ticktModel({
+//       paymentID: reference,
+//       tickets: ticketData,
+//       eventID: txn.eventID,
+//       email: txn.email,
+//       userId: findevntID.userID,
+//       // orgID: findevntID.userID, 
+//       purchaseDate: new Date()
+//     });
+//     await ticketDoc.save();
+
+//     // Update payment status
+//     txn.paymentStatus = "completed";
+//     txn.trnsctnDT = new Date();
+//     await txn.save();
+
+//     // Update overall ticketsSold count
+//     const geteventCapacity = findevntID.eventCapacity;
+//     const getticketIssuedcount = await ticktModel.countDocuments({
+//       eventID: txn.eventID,
+//       email: txn.email
+//     });
+
+//     if (geteventCapacity > findevntID.ticketsSold) {
+//       await eventModel.findOneAndUpdate(
+//         { eventID: txn.eventID },
+//         {
+//           $set: {
+//             ticketsSold: getticketIssuedcount
+//           }
+//         }
+//       );
+//     }
+
+//     // Update remaining quantity for each ticketType
+//     const updatedTickets = findevntID.tickets.map(ticket => {
+//       const matched = txn.tickets.find(t => t._id === ticket._id);
+//       if (matched) {
+//         const newQty = (ticket.quantity || 0) - (matched.quantity || 0);
+//         return {
+//           ...ticket,
+//           sold: newQty >= 0 ? newQty : 0
+//         };
+//       }
+//       return ticket;
+//     });
+//     console.log("updatedTickets:",updatedTickets)
+//     await eventModel.updateOne(
+//       { eventID: txn.eventID },
+//       { $set: { tickets: updatedTickets } }
+//     );
+
+//     res.sendStatus(200);
+//   } catch (err) {
+//     console.error("Webhook error:", err.message);
+//     res.sendStatus(500);
+//   }
+// });
+
+app.post("/paystack/webhook", express.json(), async (req, res) => {
   try {
-    const { eventID, totalCost } = req.body;
+    const signature = req.headers['x-paystack-signature'];
+    const crypto = require('crypto');
+    const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
+      .update(JSON.stringify(req.body))
+      .digest('hex');
 
-    if (!eventID || totalCost === undefined) {
-      return res.status(400).json({ msg: "Invalid data" });
-    }
+    // Uncomment this in production!
+    // if (hash !== signature) return res.sendStatus(401);
 
-    // Skip payment intent creation for free events
-    if (totalCost === 0) {
-      return res.json({ clientSecret: null });
-    }
+    const { reference, status } = req.body.data;
+    if (status !== "success") return res.sendStatus(200);
 
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: totalCost * 100, // Stripe expects the amount in cents
-      currency: "ngn",
-      metadata: { eventID },
+    const txn = await paymentModel.findOne({ paymentID: reference });
+    if (!txn) return res.sendStatus(404);
+    if (txn.paymentStatus === "completed") return res.sendStatus(200);
+
+    const event = await eventModel.findOne({ eventID: txn.eventID });
+    if (!event) return res.status(404).json({ msg: "Event not found" });
+
+    // Build ticket data for ticketModel
+    const ticketData = txn.tickets.map(t => ({
+      _id: t._id,
+      ticketType: t.ticketType,
+      ticketID: t.ticketID,
+      quantity: t.quantity
+    }));
+
+    // Save to ticktModel
+    const ticketDoc = new ticktModel({
+      paymentID: reference,
+      tickets: ticketData,
+      eventID: txn.eventID,
+      email: txn.email,
+      userId: event.userID,
+      purchaseDate: new Date()
     });
+    await ticketDoc.save();
 
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    res.status(500).json({ msg: error.message });
+    // Update payment status
+    txn.paymentStatus = "completed";
+    txn.trnsctnDT = new Date();
+    await txn.save();
+
+    // Update total tickets sold count (global)
+    const ticketCount = await ticktModel.countDocuments({ eventID: txn.eventID });
+    await eventModel.updateOne(
+      { eventID: txn.eventID },
+      { $set: { ticketsSold: ticketCount } }
+    );
+
+
+    for (const purchased of txn.tickets) {
+      await eventModel.updateOne(
+        {
+          //  eventID: txn.eventID, 
+          "tickets._id": purchased._id },
+        { $inc: { "tickets.$.sold": purchased.quantity } }
+      );
+    }
+
+    res.sendStatus(200);
+  } catch (err) {
+    console.error("Webhook error:", err.message);
+    res.sendStatus(500);
   }
 });
+
+
+app.get("/ticket-details/:reference/:email", async (req, res) => {
+  const { reference, email} = req.params;
+  const txn = await paymentModel.findOne({ paymentID: reference });
+  if (!txn || txn.paymentStatus !== 'completed') {
+    return res.status(404).json({ msg: "Transaction not verified or not found" });
+  }
+
+  const tickets = await ticktModel.find({ eventID: txn.eventID, email});
+  return res.status(200).json({ 
+    free:tickets[0],
+    paid:tickets[1]
+  });
+});
+
+
+
+// //STRIPE API
+// app.post("/create-payment-intent", async (req, res) => {
+//   try {
+//     const { eventID, totalCost } = req.body;
+
+//     if (!eventID || totalCost === undefined) {
+//       return res.status(400).json({ msg: "Invalid data" });
+//     }
+
+//     // Skip payment intent creation for free events
+//     if (totalCost === 0) {
+//       return res.json({ clientSecret: null });
+//     }
+
+//     const paymentIntent = await stripe.paymentIntents.create({
+//       amount: totalCost * 100, // Stripe expects the amount in cents
+//       currency: "ngn",
+//       metadata: { eventID },
+//     });
+
+//     res.json({ clientSecret: paymentIntent.client_secret });
+//   } catch (error) {
+//     res.status(500).json({ msg: error.message });
+//   }
+// });
 
 // Fetch all countries
 app.get("/countries", async (req, res) => {
