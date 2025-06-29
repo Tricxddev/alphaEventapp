@@ -69,7 +69,7 @@ const indiOrgSchema= new mongoose.Schema({
 
 const indiOrgModel= new mongoose.model("indiOrgModel",indiOrgSchema)
 
-//SCHEMA & MODEL FOR ORGANIZATION AS AN ORGANIZER
+//SCHEMA & MODEL FOR ORGANIZATION AS AN ORG
 const orgORGSchema= new mongoose.Schema({
     orgName:{type:String,required:true},//name of ORGANIZATION as an organizer
     phnCntkt:{

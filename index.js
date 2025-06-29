@@ -1045,12 +1045,24 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     const { reference, status } = event.data;
     if (event.event !== "charge.success" || status !== "success") {
       return res.sendStatus(200); // Nothing to process
-    }
+        }
 
     //  Find payment by reference
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
-    if (txn.paymentStatus === "completed") return res.sendStatus(200); // Already processed
+    if (txn.paymentStatus === "completed") return res.sendStatus(200);
+
+        await indiOrgModel.updateOne(
+            {
+              eventID: mongoose.Types.ObjectId(txn.userID),
+              // "tickets._id": purchased._id
+            },
+            {
+              $inc: {
+                totalEarning: txn.totalPurchase
+              }
+            }
+          );
 
     //   Get event document
     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
