@@ -78,12 +78,18 @@ const trendEvntFXN = async (req, res) => {
 
       const minPrice = Math.min(...ticketPrices);
       const maxPrice = Math.max(...ticketPrices);
-      let ticketprice = "Free";
+      let ticketpriceMIN = "Free";
+      let ticketpriceMAX = "Free";
 
       if (ticketPrices.length > 0) {
-        ticketprice = minPrice === maxPrice
+        ticketpriceMIN = minPrice === maxPrice
           ? `${minPrice}`
-          : `${minPrice} - ${maxPrice}`;
+          : `${minPrice}`// - ${maxPrice}`;
+      }
+      if (ticketPrices.length > 0) {
+        ticketpriceMAX = minPrice === maxPrice
+          ? `${maxPrice}`
+          : `${maxPrice}`// - ${maxPrice}`;
       }
 
       return {
@@ -92,7 +98,8 @@ const trendEvntFXN = async (req, res) => {
         eventImgURL: event.eventImgURL,
         eventDate: new Date(event.eventDate.eventEnd).toLocaleDateString("en-US"),
         venueInformation: event.venueInformation?.address || "Not Provided",
-        ticketprice,
+        ticketpriceMIN,
+        ticketpriceMAX,
         organizerName: organizerMap[event.userID] || "Unknown Organizer"
       };
     });

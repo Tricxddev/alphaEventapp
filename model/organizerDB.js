@@ -12,8 +12,8 @@ const allUserSchema= new mongoose.Schema({
     role:{type:String,enum:["attendee","organizer","admin","none"],default:"none"},
     accntStatus:{type:String,enum:["active","suspended"],default:"active"},
    // verifyOTpw:{type:String},
-    restpasswordOTP: { type: String },
-    restpasswordOTP_Expires: { type: Date },
+    // restpasswordOTP: { type: String },
+    // restpasswordOTP_Expires: { type: Date },
     profilePic:{type:String},
     lastLogin:{type:Date},
     isEmailVerified:{type:Boolean,default:false}

@@ -1,4 +1,5 @@
 const {orgORGmodel,indiOrgModel,allUserModel}=require("../model/organizerDB")
+const Otp=require("../model/otpdb")
 const bcrypt=require("bcrypt")
 const mongoose =require("mongoose")
 const jwt=require("jsonwebtoken")
@@ -26,9 +27,7 @@ const newUserFXN=async(req,res)=>{
         const existinUser = await allUserModel.findOne({email})
         const hashPass= await bcrypt.hash(passWd,12)
       
-        if(existinUser){
-          return res.status(409).json({msg:"USER ALREADY EXIST KINDLY GO TO LOGIN PAGE"});
-        };
+        if(!existinUser.isEmailVerified || ! existinUser){
         const token = jwt.sign(
           { email: email },
           process.env.refresTk,
@@ -41,11 +40,15 @@ const newUserFXN=async(req,res)=>{
           userID:new mongoose.Types.ObjectId(),
           name:nameCap,
           email,
-          restpasswordOTP:hashOtp,
-          restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000,// 10 minutes expiry
+          // restpasswordOTP:hashOtp,
+          // restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000,// 10 minutes expiry
           passWd:hashPass,
           lastLogin: new Date()      
         });
+        await Otp.create({
+          email,
+          otp:hashOtp,
+        })
         const veriName= await newUser.name;
         const verifyMail= await newUser.email;
         const veriToken= await newUser.verifyOTpw;
@@ -54,7 +57,7 @@ const newUserFXN=async(req,res)=>{
         await indiOrgModel.create({
           IndName:{
                   firstName: nameCap, 
-                  lastName:  nameCap|| ''},
+                  lastName: ''},
           phnCntkt:{
             countryCd:"",
             phnNum:""},
@@ -73,8 +76,12 @@ const newUserFXN=async(req,res)=>{
   
         res.status(200).json({
         msg:"SUCCESSFUL",
-        token
+       // token
         });
+        }else{
+          return res.status(409).json({msg:"USER ALREADY EXIST KINDLY GO TO LOGIN PAGE"});
+        };
+
     } catch (error){ return res.status(401).json({msg:error.message})
     }};
     module.exports={newUserFXN}
