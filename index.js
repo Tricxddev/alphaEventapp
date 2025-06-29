@@ -1051,10 +1051,10 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
     if (txn.paymentStatus === "completed") return res.sendStatus(200);
-
+        //update indidata
         await indiOrgModel.updateOne(
             {
-              eventID: mongoose.Types.ObjectId(txn.userID),
+              eventID: new mongoose.Types.ObjectId(txn.userID),
               // "tickets._id": purchased._id
             },
             {
