@@ -54,7 +54,7 @@ const eventSchema = new mongoose.Schema({
         inst: { type: String},
     },
   
-    // promotion : {type: String},
+    promotion : {type: String},
     
     // by: { type: String },
     // ticketConfig: [
@@ -85,7 +85,7 @@ const eventSchema = new mongoose.Schema({
         },
         ticketPrice: { type: Number,   },
         quantity: { type: Number   },
-        sold:{type: Number}
+        sold:{type: Number,default:0}
         }
     ],
     

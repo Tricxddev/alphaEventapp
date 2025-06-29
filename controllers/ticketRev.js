@@ -9,7 +9,7 @@ const ticketRevFXN=async(req,res)=>{
     try {
       // Search in indiOrgModel
       const findIndiUser = await indiOrgModel.findOne({ email: userEmail });
-     // console.log("userEmail:",findIndiUser)
+     
 
       if (findIndiUser) {
         console.log("found in indUser")

@@ -12,8 +12,8 @@ const allUserSchema= new mongoose.Schema({
     role:{type:String,enum:["attendee","organizer","admin","none"],default:"none"},
     accntStatus:{type:String,enum:["active","suspended"],default:"active"},
    // verifyOTpw:{type:String},
-    restpasswordOTP: { type: String },
-    restpasswordOTP_Expires: { type: Date },
+    // restpasswordOTP: { type: String },
+    // restpasswordOTP_Expires: { type: Date },
     profilePic:{type:String},
     lastLogin:{type:Date},
     isEmailVerified:{type:Boolean,default:false}
@@ -69,7 +69,7 @@ const indiOrgSchema= new mongoose.Schema({
 
 const indiOrgModel= new mongoose.model("indiOrgModel",indiOrgSchema)
 
-//SCHEMA & MODEL FOR ORGANIZATION AS AN ORGANIZER
+//SCHEMA & MODEL FOR ORGANIZATION AS AN ORG
 const orgORGSchema= new mongoose.Schema({
     orgName:{type:String,required:true},//name of ORGANIZATION as an organizer
     phnCntkt:{

@@ -231,6 +231,9 @@ const supportCall=require("./routes/supportCallRout")
 //const supportCallupdate=require("./routes/supportCallRout")
 const totalRevnTikbyOrgRout=require("./routes/totalRevnTikbyOrgRout")
 const dashboardsales=require("./routes/dashbdsalesperfRout")
+const {checkSession,logActivity}=require("./middleware/sessionChecker")
+// app.use(checkSession)
+// app.use(logActivity)
 //ROUTERS
 app.use("/api",newUsers);//SIGNUP API
 app.use("/api",login);//LOGIN API
@@ -649,6 +652,7 @@ app.get("/getalluserCont",async(req,res)=>{
 app.post("/buyTicket-initiate/:eventID", async (req, res) => {
   try {
     const { eventID } = req.params;
+    // console.log(req.path)
     const { tickets, email, totalPurchase } = req.body;
 
     //if (!eventID || !tickets || !email) return res.status(400).json({ msg: "Missing required fields" });
@@ -657,8 +661,8 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
 
     const geteventCapacity= await  findevntID.eventCapacity
-    const event=await eventModel.findOne({eventID})
-    const tiketsold=event.ticketsSold
+    // const event=await eventModel.findOne({eventID})
+    const tiketsold=findevntID.ticketsSold
 
     if(tiketsold>geteventCapacity ||tiketsold === geteventCapacity ){
       return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
@@ -701,7 +705,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
           _id: ticket._id,
           ticketID,
           ticketType:ticket.ticketType,
-          quantity: 1,
+          quantity: qty,
           unitPrice: price
         };
 
@@ -754,7 +758,17 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       purchaseDate: new Date()
     });
     await ticketTxnforTKmodel.save();
-
+    // Calculate the total quantity of free tickets issued
+    let totalFreeQty = 0;
+    for (const frrtkt of freeTickets) {
+      const qty = frrtkt.quantity;
+      totalFreeQty += qty;
+  
+      await eventModel.updateOne(
+      { eventID, "tickets._id": frrtkt._id },
+      { $inc: { "tickets.$.sold": qty } }
+      );
+    }
 
     return res.status(200).json({
       msg: "Redirect to Paystack",
@@ -1014,33 +1028,47 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
 
-    //  Step 1: Validate signature
+    //  Validate signature
     const hash = crypto
       .createHmac('sha512', secret)
       .update(JSON.stringify(req.body))
       .digest('hex');
 
     if (hash !== req.headers['x-paystack-signature']) {
+       console.log(" InValid Paystack webhook received:", req.body.event);
       return res.sendStatus(401); // Unauthorized
-    }
+      
+    }else{ console.log("Valid Paystack webhook received:", req.body.event);}
 
-    //  Step 2: Check event type and status
+    //   Check event type and status
     const event = req.body;
     const { reference, status } = event.data;
     if (event.event !== "charge.success" || status !== "success") {
       return res.sendStatus(200); // Nothing to process
-    }
+        }
 
-    // Step 3: Find payment by reference
+    //  Find payment by reference
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
-    if (txn.paymentStatus === "completed") return res.sendStatus(200); // Already processed
+    if (txn.paymentStatus === "completed") return res.sendStatus(200);
 
-    //  Step 4: Get event document
+        await indiOrgModel.updateOne(
+            {
+              eventID: mongoose.Types.ObjectId(txn.userID),
+              // "tickets._id": purchased._id
+            },
+            {
+              $inc: {
+                totalEarning: txn.totalPurchase
+              }
+            }
+          );
+
+    //   Get event document
     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
 
-    //  Step 5: Prepare and save issued tickets
+    //   Prepare and save issued tickets
     const ticketData = txn.tickets.map(t => ({
       _id: t._id,
       ticketType: t.ticketType,
@@ -1059,12 +1087,12 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
 
     await ticketDoc.save();
 
-    // ✅ Step 6: Mark payment as completed
+    //  Mark payment as completed
     txn.paymentStatus = "completed";
     txn.trnsctnDT = new Date();
     await txn.save();
 
-    // ✅ Step 7: Update overall ticketsSold
+    //  Update overall ticketsSold
     const geteventCapacity = findevntID.eventCapacity;
     const getticketIssuedcount = await ticktModel.countDocuments({
       eventID: txn.eventID,
@@ -1078,7 +1106,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       );
     }
 
-    // ✅ Step 8: Update sold count per ticket type (assumes `sold` field exists in event tickets)
+    // Update sold count per ticket type (assumes `sold` field exists in event tickets)
     for (const purchased of txn.tickets) {
       await eventModel.updateOne(
         {
@@ -1093,7 +1121,9 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       );
     }
 
+    console.log(`Transaction processed successfully for:${txn.email}`);
     res.sendStatus(200); // Success
+    
 
   } catch (err) {
     console.error("Webhook error:", err.message);
@@ -1111,11 +1141,27 @@ app.get("/ticket-details/:reference/:email", async (req, res) => {
 
   const tickets = await ticktModel.find({ eventID: txn.eventID, email});
   return res.status(200).json({ 
-    free:tickets[0],
-    paid:tickets[1]
+  tickets
   });
 });
-
+//Ticketet count
+app.get("/dashbdTicketCount/:userID",async(req,res)=>{
+  const{userID}=req.params
+  const findevntID = await eventModel.findOne({ userID })
+  if(!findevntID){
+    return res.status(200).json({
+      ticketCount:0
+    })
+  }
+      const getticketIssuedcount = await ticktModel.countDocuments({
+      userId: userID,
+      // email: txn.email
+    });
+    res.status(200).json({
+      msg:"SUCCESSFUL",
+      ticketCount:getticketIssuedcount
+    })
+})
 
 
 // //STRIPE API
