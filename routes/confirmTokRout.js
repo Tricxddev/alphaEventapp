@@ -3,6 +3,6 @@ const express = require("express")
 //const { Module } = require("module")
 const router = express.Router()
 
-router.post("/confirmedToken/:userID",confirmTokenFXN)
+router.post("/confirmedToken/:email",confirmTokenFXN)
 
 module.exports=router
