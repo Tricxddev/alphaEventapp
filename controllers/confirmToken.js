@@ -32,27 +32,27 @@ const confirmTokenFXN=async(req,res)=>{
         {return res.status(400).json({msg:"OTP ALREADY VERIFIED, PLEASE GO TO LOGIN"})};
 
       await allUserModel.findOneAndUpdate({email},{isEmailVerified:true});
-      const sessionTokz=await jwt.sign(`${checkVerifictn.userID}`,`${process.env.accessTk}`)
+      // const sessionTokz=await jwt.sign(`${checkVerifictn.userID}`,`${process.env.accessTk}`)
       //GENERATE SESSION ID
-      let sessionID
-      let isUnique= false
-      while(!isUnique){
-      sessionID= Math.floor(Math.random()*88888)
-      const findSess= await sessionModel.findOne({sessionID})
-      if(!findSess)isUnique=true
-      }
+      // let sessionID
+      // let isUnique= false
+      // while(!isUnique){
+      // sessionID= Math.floor(Math.random()*88888)
+      // const findSess= await sessionModel.findOne({sessionID})
+      // if(!findSess)isUnique=true
+      // }
       //SESSION DB UPDATE
-      const findUserid= await allUserModel.findOne({email})
-      //const refrshTokz=await jwt.sign({userID},`${process.env.refresTk}`,{expiresIn:"1m"})
-      await sessionModel.create({
-          sessionID:sessionID,
-          userID:findUserid.userID,
-          sessToken:sessionTokz,
-         // refrshTkn:refrshTokz
-      })
+      // const findUserid= await allUserModel.findOne({email})
+      // //const refrshTokz=await jwt.sign({userID},`${process.env.refresTk}`,{expiresIn:"1m"})
+      // await sessionModel.create({
+      //     sessionID:sessionID,
+      //     userID:findUserid.userID,
+      //     sessToken:sessionTokz,
+      //    // refrshTkn:refrshTokz
+      // })
       res.status(200).json({
       msg:"SUCCESSFUL",
-      token:sessionTokz
+      // token:sessionTokz
     })
     }else{res.status(400).json({msg:"INVALID ACTION"})};
     
