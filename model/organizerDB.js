@@ -51,8 +51,8 @@ const indiOrgSchema= new mongoose.Schema({
     },
     officialName:{type:String},
     email:{type:String,required:true},//email details of organizer
-    userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
-    regDate:{type:Date,default:Date.now},//registration date of organizer
+    userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
+    regDate:{type:Date,default:Date.now},
     userFollow:[{type:String}],//follwers id of organizer
     userFollowCnt:{type:Number,default:0},//followers id count of organizer
     crtdTketz:[{type:String}],//all tickets created  by organizer

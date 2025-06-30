@@ -715,7 +715,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
         //update indidata
         await indiOrgModel.updateOne(
             {
-              eventID: txn.userID,
+              userID: txn.userID,
               // "tickets._id": purchased._id
             },
             {
