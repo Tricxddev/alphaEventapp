@@ -713,9 +713,11 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     if (!txn) return res.sendStatus(404);
     if (txn.paymentStatus === "completed") return res.sendStatus(200);
         //update indidata
-        await indiOrgModel.updateOne(
+        console.log(txn.userID) 
+        console.log(txn.totalPurchase) 
+       const updateINDTOT= await indiOrgModel.updateOne(
             {
-              eventID: txn.userID,
+              userID: txn.userID,
               // "tickets._id": purchased._id
             },
             {
@@ -724,6 +726,8 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
               }
             }
           );
+    if(updateINDTOT) return console.log("Total Updated") 
+      
 
     //   Get event document
     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
