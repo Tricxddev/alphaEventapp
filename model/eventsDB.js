@@ -56,23 +56,7 @@ const eventSchema = new mongoose.Schema({
   
     promotion : {type: String},
     
-    // by: { type: String },
-    // ticketConfig: [
-    //     {
-    //     ticketCategory:{
-    //         type: String, 
-    //         enum: ["Early Bird", "Regular", "VIP"], 
-    //         required: true},
-    //     ticketType: {
-    //         type: String,
-    //         enum: ["Free","Paid"],
-    //         required: true
-    //     },
-    //     ticketPrice: { type: Number,  required: true },
-    //     ticketQty: { type: Number,  required: true },
-    //     }
-    // ],
-        tickets: [
+    tickets: [
         {
         ticketType:{
             type: String, 

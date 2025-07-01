@@ -719,7 +719,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
         console.log(txn.totalPurchase) 
        const updateINDTOT= await indiOrgModel.updateOne(
             {
-              userID:  mongoose.Types.ObjectId(findEvent.userID),
+              userID: new mongoose.Types.ObjectId(findEvent.userID),
               // "tickets._id": purchased._id
             },
             {
