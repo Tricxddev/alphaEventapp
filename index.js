@@ -332,37 +332,49 @@ const generateOTpw= function(){
 };
 
 
-app.post("/verifyOTp/:userEmail",async(req,res)=>{
-  const{userEmail}=req.params;
-  const{verificationCode}=req.body;
+// app.post("/verifyOTp/:userEmail",async(req,res)=>{
+//   const{userEmail}=req.params;
+//   const{verificationCode}=req.body;
 
-  console.log('verificationCode:',verificationCode)
+//   console.log('verificationCode:',verificationCode)
   
-  const findUser= await allUserModel.findOne({email: userEmail})
-  if(!findUser){
-    return res.status(403).json({msg:"INVALID USER"})
-  };
-  const findToken= await findUser.restpasswordOTP;
-  const compOtp= await bcrypt.compare(verificationCode,findToken)
-  if(compOtp){
-    console.log('OTPyesssssssss:')
-  }
-  if(!compOtp){
-    return res.status(403).json({msg:"INVALID OTP"})
-  }
-  await allUserModel.findOneAndUpdate(
-    {email:userEmail},
-    {isEmailVerified:true,
-      restpasswordOTP:undefined,
-      restpasswordOTP_Expires:undefined},{new:true})
-  res.status(200).json({msg:"SUCCESSFUL"})})
+//   const findUser= await allUserModel.findOne({email: userEmail})
+//   if(!findUser){
+//     return res.status(403).json({msg:"INVALID USER"})
+//   };
+//   const findToken= await findUser.restpasswordOTP;
+//   const compOtp= await bcrypt.compare(verificationCode,findToken)
+//   if(compOtp){
+//     console.log('OTPyesssssssss:')
+//   }
+//   if(!compOtp){
+//     return res.status(403).json({msg:"INVALID OTP"})
+//   }
+//   await allUserModel.findOneAndUpdate(
+//     {email:userEmail},
+//     {isEmailVerified:true,
+//       restpasswordOTP:undefined,
+//       restpasswordOTP_Expires:undefined},{new:true})
+//   res.status(200).json({msg:"SUCCESSFUL"})})
 
 
 //ALL USER COUNT
+//ADMIN TOOL
 app.get("/getalluserCont",async(req,res)=>{
   const userCount=await allUserModel.countDocuments()
   res.json(userCount)
+});
+app.get("/userNameFetch/",async(req,res)=>{
+  const{email}=req.query
+    
+  const finduser= await allUserModel.findOne({email:email});
+  console.log("finduser:",finduser)
+  return res.status(200).json({
+      msg:"SUCCESSFUL",
+      userDetails:finduser
+  })
 })
+
 
 
 // app.post("/creatIndioRg/:userID",async(req,res)=>{
@@ -460,16 +472,7 @@ app.get("/getalluserCont",async(req,res)=>{
 
 
   //GET USER NAME FOR GOOGLE AUTH PURPOSE
-  app.get("/userNameFetch/",async(req,res)=>{
-    const{email}=req.query
-    
-    const finduser= await allUserModel.findOne({email:email});
-    console.log("finduser:",finduser)
-    return res.status(200).json({
-      msg:"SUCCESSFUL",
-      userDetails:finduser
-    })
-  })
+
   //FETCH USER NAME AFTER MANUAL LOGIN
   app.get("/userNameMFetch/:userEmail",async(req,res)=>{
     const{userEmail}=req.params
@@ -549,106 +552,6 @@ app.get("/getalluserCont",async(req,res)=>{
 //BUY TICKET-PAYSTACK INITIATE ------PENDING
 
 
-
-
-
-// app.post("/buyTicket-initiate/:eventID", async (req, res) => {
-//   try {
-//     const { eventID } = req.params;
-//     const { tickets, email, totalPurchase } = req.body;
-
-//     if (!eventID || !tickets || !email) {
-//       return res.status(400).json({ msg: "Event ID, tickets, and email are required" });
-//     }
-
-//     const findevntID = await eventModel.findOne({ eventID });
-//     if (!findevntID) {
-//       return res.status(404).json({ msg: "Event not found" });
-//     }
-
-//     const { nanoid } = await import('nanoid');
-//     const createDT = new Date().toISOString().replace(/[-:.TZ]/g, '');
-//     const findORGID = await indiOrgModel.findOne({ userID: findevntID.userID });
-
-//     const genTicketID = async () => {
-//       const prefix = findORGID?.IndName?.firstName?.slice(0, 3).toUpperCase() || "ALV";
-//       return `${prefix}-${createDT}-${nanoid(7)}`;
-//     };
-
-//     const freeTickets = [];
-//     const paidTickets = [];
-//     let calculatedTotal = 0;
-
-//     for (const ticket of tickets) {
-//       const ticketDetails = findevntID.tickets.find(t => t._id.toString() === ticket._id);
-//       const qty = parseInt(ticket.quantity) || 1;
-//       const price = ticketDetails.ticketPrice;
-
-//       calculatedTotal += price * qty;
-
-
-//       for (let i = 0; i < qty; i++) {
-//         const ticketID = await genTicketID();
-//         const ticketPayload = {
-//           _id: ticket._id,
-//           ticketID,
-//           quantity: 1,
-//           ticketPrice:ticket.ticketPrice
-//         };
-
-//         if (price === 0) {
-//           freeTickets.push(ticketPayload);
-//         } else {
-//           paidTickets.push(ticketPayload);
-//         }
-//       }
-//     }
-//       // console.log(calculatedTotal)
-//       if (calculatedTotal !== parseInt(totalPurchase, 10)) {
-//         return res.status(400).json({ msg: "Total cost does not match the purchase amount" });
-//       }
-//     const response = await axios.post(
-//           "https://api.paystack.co/transaction/initialize",
-//           {
-//             email:email,
-//             amount:totalPurchase * 100,
-//             //callback_url: "http://localhost:5000/payment-success",
-//           },
-//           {
-//             headers: {
-//               Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-//               "Content-Type": "application/json",
-//             },
-//           }
-//         );
-
-//         if (!response.data.status) {
-//           return res.status(400).json({ msg: "Failed to initialize payment" });
-//         }
-//       const ticketTxn= new paymentModel({
-//         paymentID: response.data.reference,
-//         tickets:paidTickets,
-//         email,
-//         totalPurchase,
-//         trnsctnDT: new Date()
-//       })
-//       const saveticketTxn= await ticketTxn.save()
-
-//       return res.status(200).json({
-//       msg: "Tickets processed",
-//       calculatedTotal,
-//       res:response.data,
-//       authorization_url:response.data.authorization_url,
-//       reference:response.data.reference,
-//       // freeTickets,
-//       // paidTickets
-//     });
-
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ msg: "Server error", error: error.message });
-//   }
-// });
 app.post("/buyTicket-initiate/:eventID", async (req, res) => {
   try {
     const { eventID } = req.params;
@@ -781,248 +684,6 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
   }
 });
 
-// app.post("/paystack/webhook", express.json(), async (req, res) => {
-//   const signature = req.headers['x-paystack-signature'];
-//   const crypto = require('crypto');
-//   const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-//     .update(JSON.stringify(req.body))
-//     .digest('hex');
-//   // Comment this only in dev/testing, NOT in production!
-
-//   // if (hash !== signature) return res.sendStatus(401);
-
-//   const { reference, status } = req.body.data;
-//   if (status !== "success") return res.sendStatus(200);
-
-//   const txn = await paymentModel.findOne({paymentID: reference });
-//   if (!txn) return res.sendStatus(404);
-//   if (txn.paymentStatus === "completed") return res.sendStatus(200);
-
-
-//   const ticketData = txn.tickets.map(t => {
-//       const ticketDef = txn.tickets.find(x => x._id.toString() === t._id.toString());
-//       return {
-//         _id: t._id,
-//         ticketType: ticketDef.ticketType,
-//         ticketID: t.ticketID,
-//         quantity: t.quantity
-//       };
-//     });
-//     console.log(ticketData)
-//     const findevntID = await eventModel.findOne({ eventID:txn.eventID });
-//     const ticketDoc = new ticktModel({
-//       paymentID: reference,
-//       tickets: ticketData,
-//       eventID: txn.eventID,
-//       email: txn.email,
-//       userId: findevntID.userID,
-//       // orgID: org._id,
-//       purchaseDate: new Date()
-//     });
-
-//     await ticketDoc.save();
-
-//     txn.paymentStatus = "completed";
-//     txn.trnsctnDT = new Date();
-//     await txn.save();
-//     const geteventCapacity= await findevntID.eventCapacity
-//     const event=await eventModel.findOne({eventID:txn.eventID})
-//     const tiketsold=event.ticketsSold
-//     if(geteventCapacity > tiketsold){
-//           const getticketIssuedcount= await ticktModel.countDocuments({ eventID: txn.eventID, email})
-//           const updateTksold= await eventModel.findOneAndUpdate(
-//             {eventID:txn.eventID},{
-//               $set:{
-//                 ticketsSold:getticketIssuedcount
-//               }
-//             }
-//           )
-
-//     }
-//     //const event = await eventModel.findOne({ eventID: txn.eventID });
-//     if (!event) return res.status(404).json({ msg: "Event not found" });
-
-//     const updatedTickets = event.tickets.map(ticket => {
-//     const matchedTxnTicket = txn.tickets.find(t => t.ticketType === ticket.ticketType);
-//     if (matchedTxnTicket) {
-//     const newQty = (ticket.quantity || 0) - (matchedTxnTicket.quantity || 0);
-//     return {
-//       ...ticket,
-//       quantity: newQty >= 0 ? newQty : 0 // Ensure it doesn't go below 0
-//     };
-//     }
-//     return ticket;
-//   });
-
-// await eventModel.updateOne(
-//   { eventID: txn.eventID },
-//   { $set: { tickets: updatedTickets } }
-// );
-
-
-//   res.sendStatus(200);
-// });
-
-
-
-// app.post("/paystack/webhook", express.json(), async (req, res) => {
-//   try {
-//     const signature = req.headers['x-paystack-signature'];
-//     const crypto = require('crypto');
-//     const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-//       .update(JSON.stringify(req.body))
-//       .digest('hex');
-
-//     // Uncomment this in production!
-//     // if (hash !== signature) return res.sendStatus(401);
-
-//     const { reference, status } = req.body.data;
-//     if (status !== "success") return res.sendStatus(200);
-
-//     const txn = await paymentModel.findOne({ paymentID: reference });
-//     if (!txn) return res.sendStatus(404);
-//     if (txn.paymentStatus === "completed") return res.sendStatus(200);
-
-//     const findevntID = await eventModel.findOne({ eventID: txn.eventID });
-//     if (!findevntID) return res.status(404).json({ msg: "Event not found" });
-
-//     // Build ticket data
-//     const ticketData = txn.tickets.map(t => ({
-//       _id: t._id,
-//       ticketType: t.ticketType,
-//       ticketID: t.ticketID,
-//       quantity: t.quantity
-//     }));
-
-//     // Save issued ticket
-//     const ticketDoc = new ticktModel({
-//       paymentID: reference,
-//       tickets: ticketData,
-//       eventID: txn.eventID,
-//       email: txn.email,
-//       userId: findevntID.userID,
-//       // orgID: findevntID.userID, 
-//       purchaseDate: new Date()
-//     });
-//     await ticketDoc.save();
-
-//     // Update payment status
-//     txn.paymentStatus = "completed";
-//     txn.trnsctnDT = new Date();
-//     await txn.save();
-
-//     // Update overall ticketsSold count
-//     const geteventCapacity = findevntID.eventCapacity;
-//     const getticketIssuedcount = await ticktModel.countDocuments({
-//       eventID: txn.eventID,
-//       email: txn.email
-//     });
-
-//     if (geteventCapacity > findevntID.ticketsSold) {
-//       await eventModel.findOneAndUpdate(
-//         { eventID: txn.eventID },
-//         {
-//           $set: {
-//             ticketsSold: getticketIssuedcount
-//           }
-//         }
-//       );
-//     }
-
-//     // Update remaining quantity for each ticketType
-//     const updatedTickets = findevntID.tickets.map(ticket => {
-//       const matched = txn.tickets.find(t => t._id === ticket._id);
-//       if (matched) {
-//         const newQty = (ticket.quantity || 0) - (matched.quantity || 0);
-//         return {
-//           ...ticket,
-//           sold: newQty >= 0 ? newQty : 0
-//         };
-//       }
-//       return ticket;
-//     });
-//     console.log("updatedTickets:",updatedTickets)
-//     await eventModel.updateOne(
-//       { eventID: txn.eventID },
-//       { $set: { tickets: updatedTickets } }
-//     );
-
-//     res.sendStatus(200);
-//   } catch (err) {
-//     console.error("Webhook error:", err.message);
-//     res.sendStatus(500);
-//   }
-// });
-
-// app.post("/paystack/webhook", express.json(), async (req, res) => {
-//   try {
-//     const signature = req.headers['x-paystack-signature'];
-//     const crypto = require('crypto');
-//     const hash = crypto.createHmac('sha512', process.env.PAYSTACK_SECRET_KEY)
-//       .update(JSON.stringify(req.body))
-//       .digest('hex');
-//     console.log(signature)
-//     // Uncomment this in production!
-//     // if (hash !== signature) return res.sendStatus(401);
-
-//     const { reference, status } = req.body.data;
-//     if (status !== "success") return res.sendStatus(200);
-
-//     const txn = await paymentModel.findOne({ paymentID: reference });
-//     if (!txn) return res.sendStatus(404);
-//     if (txn.paymentStatus === "completed") return res.sendStatus(200);
-
-//     const event = await eventModel.findOne({ eventID: txn.eventID });
-//     if (!event) return res.status(404).json({ msg: "Event not found" });
-
-//     // Build ticket data for ticketModel
-//     const ticketData = txn.tickets.map(t => ({
-//       _id: t._id,
-//       ticketType: t.ticketType,
-//       ticketID: t.ticketID,
-//       quantity: t.quantity
-//     }));
-
-//     // Save to ticktModel
-//     const ticketDoc = new ticktModel({
-//       paymentID: reference,
-//       tickets: ticketData,
-//       eventID: txn.eventID,
-//       email: txn.email,
-//       userId: event.userID,
-//       purchaseDate: new Date()
-//     });
-//     await ticketDoc.save();
-
-//     // Update payment status
-//     txn.paymentStatus = "completed";
-//     txn.trnsctnDT = new Date();
-//     await txn.save();
-
-//     // Update total tickets sold count (global)
-//     const ticketCount = await ticktModel.countDocuments({ eventID: txn.eventID });
-//     await eventModel.updateOne(
-//       { eventID: txn.eventID },
-//       { $set: { ticketsSold: ticketCount } }
-//     );
-
-
-//     for (const purchased of txn.tickets) {
-//       await eventModel.updateOne(
-//         {
-//           //  eventID: txn.eventID, 
-//           "tickets._id": purchased._id },
-//         { $inc: { "tickets.$.sold": purchased.quantity } }
-//       );
-//     }
-
-//     res.sendStatus(200);
-//   } catch (err) {
-//     console.error("Webhook error:", err.message);
-//     res.sendStatus(500);
-//   }
-// });
-
 
 app.post("/paystack/webhook", express.json(), async (req, res) => {
   try {
@@ -1051,10 +712,12 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
     if (txn.paymentStatus === "completed") return res.sendStatus(200);
-
-        await indiOrgModel.updateOne(
+        //update indidata
+        console.log(txn.userID) 
+        console.log(txn.totalPurchase) 
+       const updateINDTOT= await indiOrgModel.updateOne(
             {
-              eventID: mongoose.Types.ObjectId(txn.userID),
+              userID: txn.userID,
               // "tickets._id": purchased._id
             },
             {
@@ -1063,6 +726,8 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
               }
             }
           );
+    if(updateINDTOT) return console.log("Total Updated") 
+      
 
     //   Get event document
     const findevntID = await eventModel.findOne({ eventID: txn.eventID });

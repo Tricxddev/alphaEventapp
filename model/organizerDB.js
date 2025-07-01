@@ -51,13 +51,13 @@ const indiOrgSchema= new mongoose.Schema({
     },
     officialName:{type:String},
     email:{type:String,required:true},//email details of organizer
-    userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},//ID details of organizer
-    regDate:{type:Date,default:Date.now},//registration date of organizer
+    userID:{type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
+    regDate:{type:Date,default:Date.now},
     userFollow:[{type:String}],//follwers id of organizer
     userFollowCnt:{type:Number,default:0},//followers id count of organizer
     crtdTketz:[{type:String}],//all tickets created  by organizer
     crtdTketCnt:{type:Number,default:0},//all tickets count created  by organizer
-    totalEarning:{type:Number,default:0},//all tickets sales value earned by organizer
+    totalEarning:{type:Number,default:0},//all tickets sales value earned by organizer to be updt
     bankDetails:{
         bankName:{type:String},//bank name of organizer
         accountNumber:{type:String},//bank account number of organizer
