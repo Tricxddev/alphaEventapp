@@ -59,10 +59,10 @@ const indiOrgSchema= new mongoose.Schema({
     crtdTketCnt:{type:Number,default:0},//all tickets count created  by organizer
     totalEarning:{type:Number,default:0},//all tickets sales value earned by organizer to be updt
     bankDetails:{
-        bankName:{type:String},//bank name of organizer
-        accountNumber:{type:String},//bank account number of organizer
-        accountHolderName:{type:String},//account holder name of organizer
-        accountType:{type:String,enum:["savings","current"]}//account type of organizer
+        bankName:{type:String},
+        accountNumber:{type:String},
+        accountHolderName:{type:String},
+        accountType:{type:String,enum:["savings","current"]}
     }
 
 },{timestamps:true})
