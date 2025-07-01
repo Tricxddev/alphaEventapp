@@ -17,7 +17,6 @@ const paymentSchema= new mongoose.Schema({
     totalPurchase: {type: Number,required: true,default:0},
     paymentStatus:{type:String,required:true,enum:["completed","pending","failed"],default:"pending"},
     payMethod:{type:String,default:"Paystack"},
-    // trnsctnID:{type:String},
     trnsctnDT:{type:Date,required:true}
 
 },{timestamps:true})
