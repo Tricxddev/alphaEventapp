@@ -793,8 +793,8 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       }
     }
   ]);
-
-  const totalTicketsSold = getTotalTicketsIssued[0]?.total || 0;
+console.log("getTotalTicketsIssued:",getTotalTicketsIssued)
+  const totalTicketsSold = getTotalTicketsIssued[0].total;
 
   if (geteventCapacity >= totalTicketsSold) {
     await eventModel.updateOne(
