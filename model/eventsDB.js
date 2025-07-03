@@ -81,7 +81,7 @@ const eventSchema = new mongoose.Schema({
     userID: {type:mongoose.Schema.Types.ObjectId,ref:"allUserModel"},
     organizerName: {type: String},
     ticketsSold: { type: Number, default: 0 },
-    ticketIDs: [{ type:String , unique: true }], 
+    ticketIDs: [{ type:String }], 
 
 }, { timestamps: true });
 
