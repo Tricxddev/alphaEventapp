@@ -772,36 +772,36 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
 
     // //  Update overall ticketsSold
     const geteventCapacity = findevntID.eventCapacity;
-    // const getticketIssuedcount = await ticktModel.countDocuments({
-    //   eventID: txn.eventID,
-    //   email: txn.email
-    // });
+    const getticketIssuedcount = await ticktModel.countDocuments({
+      eventID: txn.eventID,
+      // email: txn.email
+    });
 
-    // if (geteventCapacity > findevntID.ticketsSold) {
-    //   await eventModel.findOneAndUpdate(
-    //     { eventID: txn.eventID },
-    //     { $set: { ticketsSold: getticketIssuedcount } }
-    //   );
-    // }
-  const getTotalTicketsIssued = await ticktModel.aggregate([
-    { $match: { eventID: txn.eventID } },
-    { $unwind: "$tickets" },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$tickets.quantity" }
-      }
+    if (geteventCapacity > findevntID.ticketsSold) {
+      await eventModel.findOneAndUpdate(
+        { eventID: txn.eventID },
+        { $set: { ticketsSold: getticketIssuedcount } }
+      );
     }
-  ]);
+  // const getTotalTicketsIssued = await ticktModel.aggregate([
+  //   { $match: { eventID: txn.eventID } },
+  //   { $unwind: "$tickets" },
+  //   {
+  //     $group: {
+  //       _id: null,
+  //       total: { $sum: "$tickets.quantity" }
+  //     }
+  //   }
+  // ]);
+console.log("getTotalTicketsIssued:",getticketIssuedcount)
+//   const totalTicketsSold = getTotalTicketsIssued[0].total;
 
-  const totalTicketsSold = getTotalTicketsIssued[0]?.total || 0;
-
-  if (geteventCapacity >= totalTicketsSold) {
-    await eventModel.updateOne(
-      { eventID: txn.eventID },
-      { $set: { ticketsSold: totalTicketsSold } }
-    );
-  }
+//   if (geteventCapacity >= totalTicketsSold) {
+//     await eventModel.updateOne(
+//       { eventID: txn.eventID },
+//       { $set: { ticketsSold: totalTicketsSold } }
+//     );
+//   }
 
     // Update sold count per ticket type (assumes `sold` field exists in event tickets)
     for (const purchased of txn.tickets) {
