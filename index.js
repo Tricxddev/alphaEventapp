@@ -771,7 +771,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     await txn.save();
 
     // //  Update overall ticketsSold
-    // const geteventCapacity = findevntID.eventCapacity;
+    const geteventCapacity = findevntID.eventCapacity;
     // const getticketIssuedcount = await ticktModel.countDocuments({
     //   eventID: txn.eventID,
     //   email: txn.email
