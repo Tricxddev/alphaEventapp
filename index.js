@@ -632,7 +632,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       {
         email,
         amount: calculatedTotal * 100,
-        callback_url: "https://yourdomain.com/paystack/callback"
+        callback_url: "https://alvent.netlify.app"
       },
       {
         headers: {
@@ -652,6 +652,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       trnsctnDT: new Date()
     });
     await ticketTxn.save();
+    if (freeTickets.length > 0){
      const ticketTxnforTKmodel = new ticktModel({
       eventID,
       email,
@@ -660,7 +661,6 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       totalPurchase: 0,
       purchaseDate: new Date()
     });
-    await ticketTxnforTKmodel.save();
     // Calculate the total quantity of free tickets issued
     let totalFreeQty = 0;
     for (const frrtkt of freeTickets) {
@@ -672,6 +672,8 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       { $inc: { "tickets.$.sold": qty } }
       );
     }
+       await ticketTxnforTKmodel.save();
+  }
 
     return res.status(200).json({
       msg: "Redirect to Paystack",
@@ -684,7 +686,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
   }
 });
 
-
+//yet to push ticket ID's to eventmodel.ticketIDs
 app.post("/paystack/webhook", express.json(), async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
@@ -711,7 +713,16 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
     //  Find payment by reference
     const txn = await paymentModel.findOne({ paymentID: reference });
     if (!txn) return res.sendStatus(404);
-    if (txn.paymentStatus === "completed") return res.sendStatus(200);
+    // if (txn.paymentStatus === "completed") return res.sendStatus(200);
+    if (txn.paymentStatus === "completed") {
+      console.log("Transaction already completed:", reference);
+      return res.sendStatus(200);
+    }
+    if (txn.paymentStatus !== "pending") {
+      console.log("Unexpected payment status:", txn.paymentStatus);
+      return res.sendStatus(200);
+    }
+    if (txn.paymentStatus === "pending"){
     const findEvent= await eventModel.findOne({eventID:txn.eventID})
    
         //update indidata
@@ -728,7 +739,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
               }
             }
           );
-    if(updateINDTOT) return console.log("Total Updated") 
+    if(updateINDTOT){console.log("Total Updated")}
       
 
     //   Get event document
@@ -790,13 +801,11 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
 
     console.log(`Transaction processed successfully for:${txn.email}`);
     res.sendStatus(200); // Success
-    
-
+  }
   } catch (err) {
     console.error("Webhook error:", err.message);
     res.sendStatus(500);
-  }
-});
+  }});
 
 
 app.get("/ticket-details/:reference/:email", async (req, res) => {
