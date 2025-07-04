@@ -231,7 +231,7 @@ const supportCall=require("./routes/supportCallRout")
 //const supportCallupdate=require("./routes/supportCallRout")
 const totalRevnTikbyOrgRout=require("./routes/totalRevnTikbyOrgRout")
 const dashboardsales=require("./routes/dashbdsalesperfRout")
-const {checkSession,logActivity}=require("./middleware/sessionChecker")
+const {checkSession,logActivity,eventClickGet}=require("./middleware/sessionChecker")
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -793,22 +793,6 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       { $set: { ticketsSold: totalTicketsSold } }
     );
 
-
-    // Update sold count per ticket type (assumes `sold` field exists in event tickets)
-    // for (const purchased of txn.tickets) {
-    //   await eventModel.updateOne(
-    //     {
-    //       eventID: txn.eventID,
-    //       "tickets._id": purchased._id
-    //     },
-    //     {
-    //       $inc: {
-    //         "tickets.$.sold":Number(purchased.quantity)|| 0
-    //       }
-    //     }
-    //   );
-    // }
-  // Group tickets by _id and sum quantity
   const soldCountMap = {};
 
   txn.tickets.forEach(t => {
