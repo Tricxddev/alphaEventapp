@@ -2,6 +2,7 @@ const mongoose =require("mongoose")
 const {orgORGmodel,indiOrgModel,allUserModel}=require("../model/organizerDB")
 const sessionModel=require("../model/sessiosDB")
 const activityModel = require("../model/activitySchema");
+const eventModel = require("../model/eventsDB");
 
 //TO BE IMPLEMENTED SOON
 const checkSession = async (req, res, next) => {
@@ -56,4 +57,25 @@ const logActivity = async (req, res, next) => {
 };
 
 
-module.exports = {checkSession,logActivity};
+const eventClickGet = async (req, res, next) => {
+  try {
+    const { eventID } = req.params;
+
+    if (!eventID) {
+      return next(); // skip if eventID is not provided
+    }
+
+    await eventModel.updateOne(
+      { eventID },
+      { $inc: { clicks: 1 } }
+    );
+
+    next();
+  } catch (error) {
+    console.error("Error updating event clicks:", error.message);
+    next(); // don't block the route if there's an error
+  }
+};
+
+
+module.exports = {checkSession,logActivity,eventClickGet};
