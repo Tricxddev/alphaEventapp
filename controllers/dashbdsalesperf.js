@@ -9,11 +9,15 @@ const dashboardsalesFXN = async (req, res) => {
     const userObjId = new mongoose.Types.ObjectId(userID);
 
     // const today = new Date();
-    const today = moment().tz("Africa/Lagos");
-    // const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    // const startOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
-    const startOfMonth = today.clone().startOf("month").toDate(); 
-    const startOfNextMonth = today.clone().add(1, "month").startOf("month").toDate();
+const today = moment.utc(); // Use UTC
+const startOfMonth = today.clone().startOf("month").toDate();
+const startOfNextMonth = today.clone().add(1, "month").startOf("month").toDate();
+
+console.log("Range UTC:", {
+  startOfMonth,
+  startOfNextMonth,
+});
+
           console.log(startOfMonth)
 
     const tickets = await ticktModel.aggregate([
@@ -30,7 +34,7 @@ const dashboardsalesFXN = async (req, res) => {
       {
         $group: {
           _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$purchaseDate" ,timezone: "Africa/Lagos"},
+            $dateToString: { format: "%Y-%m-%d", date: "$purchaseDate" ,timezone: "UTC" },
           },
           totalsales: { $sum: "$tickets.quantity" },
         },
