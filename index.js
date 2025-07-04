@@ -594,11 +594,8 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       const event=await eventModel.findOne({eventID:findevntID.eventID})
       const tiketsold=event.ticketsSold
       if (!ticketDetails) return res.status(400).json({ msg: `Ticket ID ${ticket._id} not found` });
-      // if(tiketsold+totalQty > geteventCapacity){
-      //   return res.status(410).json({msg:"TICKET FOR THIS EVENT IS SOLD OUT"})
-      // }
 
-      const qty = parseInt(ticket.quantity) || 1;
+      const qty = Number(ticket.quantity) || 1;
       const price = ticketDetails.ticketPrice;
       calculatedTotal += price * qty;
 
@@ -806,7 +803,7 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
         },
         {
           $inc: {
-            "tickets.$.sold": purchased.quantity
+            "tickets.$.sold":Number(purchased.quantity)|| 0
           }
         }
       );
