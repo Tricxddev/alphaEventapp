@@ -605,7 +605,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
           _id: ticket._id,
           ticketID,
           ticketType:ticket.ticketType,
-          quantity: qty,
+          quantity: 1,
           unitPrice: price
         };
 
