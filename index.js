@@ -232,6 +232,8 @@ const supportCall=require("./routes/supportCallRout")
 const totalRevnTikbyOrgRout=require("./routes/totalRevnTikbyOrgRout")
 const dashboardsales=require("./routes/dashbdsalesperfRout")
 const {checkSession,logActivity,eventClickGet}=require("./middleware/sessionChecker")
+const upcomingevents=require("./routes/myEventDashRout")
+const ticketsoldOverview=require("./routes/myEventDashRout")
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -259,6 +261,8 @@ app.use("/api",supportCall);//SUPPORT CALL API
 //app.use("/api",supportCallupdate);//SUPPORT CALL UPDATE API 
 app.use("/api",totalRevnTikbyOrgRout);//TOTAL REVENUE AND TICKET COUNT BY ORGANIZER API
 app.use("/api",dashboardsales);// SALES PERFORMANCE DASHBOARD VIEW API
+app.use("/api",upcomingevents);// ORGANISER DASHBOARD VIEW UPCOMING EVENT API
+app.use("/api",ticketsoldOverview);// ORGANISER DASHBOARD VIEW UPCOMING EVENT API
 
 app.get('/userInfo', async (req, res) => {
   try {
