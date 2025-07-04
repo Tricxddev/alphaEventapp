@@ -605,7 +605,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
           _id: ticket._id,
           ticketID,
           ticketType:ticket.ticketType,
-          quantity: qty,
+          quantity: 1,
           unitPrice: price
         };
 
@@ -795,19 +795,36 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
 
 
     // Update sold count per ticket type (assumes `sold` field exists in event tickets)
-    for (const purchased of txn.tickets) {
-      await eventModel.updateOne(
-        {
-          eventID: txn.eventID,
-          "tickets._id": purchased._id
-        },
-        {
-          $inc: {
-            "tickets.$.sold":Number(purchased.quantity)|| 0
-          }
-        }
-      );
-    }
+    // for (const purchased of txn.tickets) {
+    //   await eventModel.updateOne(
+    //     {
+    //       eventID: txn.eventID,
+    //       "tickets._id": purchased._id
+    //     },
+    //     {
+    //       $inc: {
+    //         "tickets.$.sold":Number(purchased.quantity)|| 0
+    //       }
+    //     }
+    //   );
+    // }
+  // Group tickets by _id and sum quantity
+  const soldCountMap = {};
+
+  txn.tickets.forEach(t => {
+    const id = t._id.toString();
+    const qty = Number(t.quantity) || 1;
+    soldCountMap[id] = (soldCountMap[id] || 0) + qty;
+  });
+
+  // Update the `sold` field per ticket ID once
+  for (const [ticketId, soldQty] of Object.entries(soldCountMap)) {
+    await eventModel.updateOne(
+      { eventID: txn.eventID, "tickets._id": ticketId },
+      { $inc: { "tickets.$.sold": soldQty } }
+    );
+  }
+
 
     console.log(`Transaction processed successfully for:${txn.email}`);
     res.sendStatus(200); // Success
