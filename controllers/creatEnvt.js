@@ -35,7 +35,7 @@ const creatEventFXN=async(req,res)=>{
     instagram
   }=req.body;
   const {userID}=req.params;
-  // console.log("userID:",userID)
+  console.log("reqBody:",req.body)
   // validate if maximumAttendees equal to total number of array of tickets(ticket quantity)
   const maxAttdtonumber = parseInt(maximumAttendees, 10);
 
