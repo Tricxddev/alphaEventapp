@@ -3,6 +3,10 @@ const {orgORGmodel,indiOrgModel,allUserModel}=require("../model/organizerDB")
 const orgProfileFXN= async(req,res)=>{
   try {
     const {userID}=req.params;
+    if(!userID ||userID===undefined){
+      console.log("MISSING USER ID DETAIL")
+    }
+    console.log("USER ID:", userID);
     const findUser= await indiOrgModel.findOne({userID:userID});
     const allUser= await allUserModel.findOne({userID:userID});
     if(!findUser && !allUser){
