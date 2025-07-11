@@ -73,6 +73,7 @@ const creatEventFXN=async(req,res)=>{
     }
     return total;
   }, 0);
+  console.log("totalTicketQuantity:",totalTicketQuantity)
   if (maxAttdtonumber !== totalTicketQuantity) {
     return res.status(400).json({ msg: "Maximum attendees configure must equal total ticket quantity configured" });
   } 
