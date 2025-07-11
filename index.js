@@ -43,12 +43,12 @@ const { type } = require("os");
 //const landingFtPagination=require("./services/utilities")
 require("./services/autoMailerSheduler")//for monthly event digest
 const paymentModel=require("./model/paymeNtDb")
-// const verifyPaystackSignature=require("./middleware/verifyPaystackSignature")
+
 
 //CONFIGS
 const corsOptions = {
   origin: "*", // Add your frontend URLs here
-  methods:["GET", "POST", "PUT", "DELETE"],
+  methods:["GET", "POST", "PUT", "DELETE","PATCH"],
   credentials: true,
 };
 // app.use('*',cors({
@@ -85,20 +85,12 @@ passport.use(new GoogleStrategy({
   callbackURL: process.env.gcallbackURL
 
 },async(accessToken,refreshToken,profile,done)=>{
-  // console.log("Access Token:", accessToken);
-  //   console.log("Refresh Token:", refreshToken);
-  //   console.log("Profile:", profile);
+
 
     if (!profile) {
       return done(null, false, { message: "No profile returned from Google." });
   }
-         // Log the raw profile data received from Google
-         //console.log("Google Profile Data:", profile);
 
-         // Extract specific fields for debugging
-        //  console.log("Google ID:", profile.id);
-        //  console.log("Name:", profile.displayName);
-        //  console.log("Email:", profile.emails[0].value);
 
   const existingOAuthUser= await o2authUser.findOne({googleId:profile.id})
 
@@ -149,7 +141,6 @@ passport.use(new GoogleStrategy({
    
    const user = await o2authUser.findOne({ googleId: profile.id })
 
-  // console.log(profile);
   return done(null,user)
 }));
 
@@ -198,9 +189,7 @@ app.get('/auth/google/callback',
   
     // Successful authentication, redirect to your desired route
    res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
-   //res.redirect(`http://localhost:5173/OnboardingMain/?token=${token}`);
-  //  res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
-   // res.redirect('/updt%Passwd/:googleId');
+
   } catch (error) {
     console.error('Authentication error:', error);
     res.redirect('/');
