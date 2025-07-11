@@ -30,30 +30,40 @@ const creatEventFXN=async(req,res)=>{
     eventCity,
     eventVenue,
     eventTags,
-    // tickets,
+    tickets:rawTickets,
     eventImgURL,
     facebook,
     instagram
   }=req.body;
   const {userID}=req.params;
   console.log("reqBody:",req.body)
-const reconstructTickets = (body) => {
   const tickets = [];
-
-  for (const key in body) {
-    const match = key.match(/^tickets\[(\d+)]\[(\w+)]$/);
-    if (match) {
-      const index = parseInt(match[1], 10);
-      const field = match[2];
-      if (!tickets[index]) tickets[index] = {};
-      tickets[index][field] = body[key];
+    if (typeof rawTickets === "string") {
+      try {
+        tickets = JSON.parse(rawTickets);
+      } catch (err) {
+        return res.status(400).json({ msg: "Invalid tickets format" });
+      }
+    } else if (Array.isArray(rawTickets)) {
+      tickets = rawTickets;
     }
-  }
+// const reconstructTickets = (body) => {
 
-  return tickets;
-};
 
-const tickets = reconstructTickets(req.body);
+//   for (const key in body) {
+//     const match = key.match(/^tickets\[(\d+)]\[(\w+)]$/);
+//     if (match) {
+//       const index = parseInt(match[1], 10);
+//       const field = match[2];
+//       if (!tickets[index]) tickets[index] = {};
+//       tickets[index][field] = body[key];
+//     }
+//   }
+
+//   return tickets;
+// };
+
+// const tickets = reconstructTickets(req.body);
   // validate if maximumAttendees equal to total number of array of tickets(ticket quantity)
   const maxAttdtonumber = parseInt(maximumAttendees, 10);
 
