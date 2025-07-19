@@ -37,10 +37,11 @@ const creatEventFXN=async(req,res)=>{
   }=req.body;
   const {userID}=req.params;
   console.log("reqBody:",req.body)
-  const tickets = [];
+  let tickets = [];
     if (typeof rawTickets === "string") {
       try {
         tickets = JSON.parse(rawTickets);
+        tickets = tickets.filter(t => t.ticketType && parseInt(t.quantity, 10) > 0)
       } catch (err) {
         return res.status(400).json({ msg: "Invalid tickets format" });
       }
@@ -73,6 +74,7 @@ const creatEventFXN=async(req,res)=>{
     }
     return total;
   }, 0);
+  console.log("totalTicketQuantity:",totalTicketQuantity)
   if (maxAttdtonumber !== totalTicketQuantity) {
     return res.status(400).json({ msg: "Maximum attendees configure must equal total ticket quantity configured" });
   } 
