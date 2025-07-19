@@ -37,10 +37,11 @@ const creatEventFXN=async(req,res)=>{
   }=req.body;
   const {userID}=req.params;
   console.log("reqBody:",req.body)
-  const tickets = [];
+  let tickets = [];
     if (typeof rawTickets === "string") {
       try {
         tickets = JSON.parse(rawTickets);
+        tickets = tickets.filter(t => t.ticketType && parseInt(t.quantity, 10) > 0)
       } catch (err) {
         return res.status(400).json({ msg: "Invalid tickets format" });
       }
