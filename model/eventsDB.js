@@ -9,11 +9,11 @@ const eventSchema = new mongoose.Schema({
     eventCapacity: { type: Number},
     eventTags: [{type: String}],
     eventType: { type: String, 
-        enum: ["Virtual", "Physical"], 
+      //  enum: ["Virtual", "Physical"], 
         },
     eventCategory: { 
         type: String, 
-        enum: ["Premium", "Education", "Attractions", "Entertainment", "Sports"], 
+        //enum: ["Premium", "Education", "Attractions", "Entertainment", "Sports"], 
         },
     eventDate: {
         eventStart: { type: String },
@@ -25,8 +25,13 @@ const eventSchema = new mongoose.Schema({
     eventTime: {
         start: { type: String}, // Store as "HH:MM"
         end: { type: String },
-        startClock: { type: String, enum: ["AM", "PM"] },
-        endClock: { type: String, enum: ["AM", "PM"] }
+        startClock: { type: String, 
+          //  enum: ["AM", "PM"]
+
+         },
+        endClock: { type: String,
+            // enum: ["AM", "PM"] 
+            }
         },
        
     venueInformation: {
@@ -60,11 +65,11 @@ const eventSchema = new mongoose.Schema({
         {
         ticketType:{
             type: String, 
-            enum: ["Early Bird", "Regular", "VIP"], 
+          //  enum: ["Early Bird", "Regular", "VIP"], 
             },
         PriceType: {
             type: String,
-            enum: ["Free","Paid"],
+          //  enum: ["Free","Paid"],
             
         },
         ticketPrice: { type: Number,   },
