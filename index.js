@@ -47,9 +47,9 @@ const paymentModel=require("./model/paymeNtDb")
 
 //CONFIGS
 const corsOptions = {
-  origin: "*", // Add your frontend URLs here
+  origin: "*", 
   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-  credentials: true,
+  credentials: false,
 };
 // app.use('*',cors({
 //     origin:"http://localhost:5173",
@@ -223,6 +223,9 @@ const dashboardsales=require("./routes/dashbdsalesperfRout")
 const {checkSession,logActivity,eventClickGet}=require("./middleware/sessionChecker")
 const upcomingevents=require("./routes/myEventDashRout")
 const ticketsoldOverview=require("./routes/myEventDashRout")
+const initiatewithDrawFunds=require("./routes/financeRout")
+const approveWithdrawal=require("./routes/financeRout")
+const withdrawalHistory=require("./routes/financeRout")
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -252,6 +255,9 @@ app.use("/api",totalRevnTikbyOrgRout);//TOTAL REVENUE AND TICKET COUNT BY ORGANI
 app.use("/api",dashboardsales);// SALES PERFORMANCE DASHBOARD VIEW API
 app.use("/api",upcomingevents);// ORGANISER DASHBOARD VIEW UPCOMING EVENT API
 app.use("/api",ticketsoldOverview);// ORGANISER DASHBOARD VIEW UPCOMING EVENT API
+app.use("/api",initiatewithDrawFunds);// WITHDRAW FUNDS API
+app.use("/api",approveWithdrawal);// ADMIN APPROVE WITHDRAWAL API
+app.use("/api",withdrawalHistory);// WITHDRAWAL HISTORY API
 
 app.get('/userInfo', async (req, res) => {
   try {
