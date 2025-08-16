@@ -9,7 +9,7 @@ const allUserSchema= new mongoose.Schema({
     email:{type:String},
     googleId:{type:String},
     passWd:{type:String},
-    role:{type:String,enum:["attendee","organizer","admin","none"],default:"none"},
+    role:{type:String,enum:["attendee","organizer","adminz","none"],default:"none"},
     accntStatus:{type:String,enum:["active","suspended"],default:"active"},
    // verifyOTpw:{type:String},
     // restpasswordOTP: { type: String },
@@ -62,7 +62,8 @@ const indiOrgSchema= new mongoose.Schema({
         bankName:{type:String},
         accountNumber:{type:String},
         accountHolderName:{type:String},
-        accountType:{type:String,enum:["savings","current"]}
+        accountType:{type:String,/*enum:["savings","current"]*/},
+        bankSortCode:{type:String}
     }
 
 },{timestamps:true})
