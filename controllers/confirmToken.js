@@ -40,7 +40,7 @@ const confirmTokenFXN=async(req,res)=>{
     })
     }else{res.status(400).json({msg:"INVALID ACTION"})};
     
-    }catch(error){return res.status(400).json({msg:error.message})}
+    }catch(error){res.status(400).json({msg:error.message})}
   }
   module.exports={confirmTokenFXN}
   

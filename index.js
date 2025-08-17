@@ -61,9 +61,11 @@ const corsOptions = {
 //     methods:["GET", "POST", "PUT", "DELETE"],
 //     credentials:true,
 //  }))
-app.use(cors(corsOptions));
-dotenv.config()
 app.use(express.json())
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+dotenv.config()
+
 app.use(express.urlencoded({ extended: true }));
 dbconnect()
 //rdbmsConnect()
