@@ -11,7 +11,8 @@ const confirmTokenFXN=async(req,res)=>{
     const {email}=req.params;
     const verifyID= await allUserModel.findOne({email});
     const getOTP=await Otp.findOne({email})
-    
+
+    console.log("userToken:", userToken);
     if(!verifyID){
       res.status(403).json({msg:"INVALID ACTION"})
     };
@@ -39,7 +40,7 @@ const confirmTokenFXN=async(req,res)=>{
     })
     }else{res.status(400).json({msg:"INVALID ACTION"})};
     
-    }catch(error){return res.status(400).json({msg:error.message})}
+    }catch(error){res.status(400).json({msg:error.message})}
   }
   module.exports={confirmTokenFXN}
   
