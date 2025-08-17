@@ -19,6 +19,9 @@ const confirmTokenFXN=async(req,res)=>{
     if(!userToken){
       res.status(403).json({msg:"OTP REQUIRED"})
     };
+    if(userToken === "undefined" || userToken === undefined){
+      return res.status(403).json({msg:"OTP CAN NOT BE NULL OR UNDEFINED"})
+    }
       // Check if OTP is expired
     if (!getOTP) {
       return res.status(403).json({ msg: "OTP has expired" });
