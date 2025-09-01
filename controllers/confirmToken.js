@@ -11,7 +11,7 @@ const confirmTokenFXN=async(req,res)=>{
     const {email}=req.params;
     const verifyID= await allUserModel.findOne({email});
     const getOTP=await Otp.findOne({email})
-
+    console.log("request:",req.body)
     console.log("userToken:", userToken);
     if(!verifyID){
       res.status(403).json({msg:"INVALID ACTION"})
@@ -19,6 +19,9 @@ const confirmTokenFXN=async(req,res)=>{
     if(!userToken){
       res.status(403).json({msg:"OTP REQUIRED"})
     };
+    if(userToken === "undefined" || userToken === undefined){
+      return res.status(403).json({msg:"OTP CAN NOT BE NULL OR UNDEFINED"})
+    }
       // Check if OTP is expired
     if (!getOTP) {
       return res.status(403).json({ msg: "OTP has expired" });
