@@ -14,12 +14,12 @@ exports.authFxn = async (req, res, next) => {
     const token = tk.split(" ")[1];
 
     const decoded = jwt.verify(token, process.env.refresTk);
-    console.log(decoded);
+    console.log(decoded.email);
     if (!decoded) {
       return res.status(401).json({ message: "Invalid login details" });
     }
-
-    const user = await allUserModel.findById(decoded.userId);
+    const userMail = decoded.email;
+    const user = await allUserModel.findOne({ email: userMail });
 
     if (!user) {
       return res.status(404).json({ message: "User account not found!" });
