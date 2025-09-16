@@ -11,9 +11,9 @@ const generateOTpw= function(){
 
 const newUserFXN=async(req,res)=>{
     try {
-      const {name,email,passWd}=req.body
-    
-        
+      const {name,email,passWd,confirmPassword}=req.body
+      console.log(req.body)
+      
         if (!name || !email || !passWd) {
         return res.status(400).json({ msg: "All fields are required" });
         }
@@ -47,10 +47,15 @@ const newUserFXN=async(req,res)=>{
           passWd:hashPass,
           lastLogin: new Date()      
         });
-        await Otp.create({
-          email,
-          otp:hashOtp,
-        })
+        // await Otp.create({
+        //   email,
+        //   otp:hashOtp,
+        // })
+        await Otp.updateOne(
+          { email },
+          { otp: hashOtp },
+          { upsert: true } // insert if not exists, update if exists
+        );
         const veriName= await newUser.name;
         const verifyMail= await newUser.email;
         const veriToken= await newUser.verifyOTpw;
