@@ -46,21 +46,22 @@ const paymentModel=require("./model/paymeNtDb")
 
 dotenv.config()
 //CONFIGS
-// const corsOptions = {
-//   origin: "*", 
-//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-//   credentials: false,
-// };
+const corsOptions = {
+  origin: "*", 
+  methods:["GET", "POST", "PUT", "DELETE","PATCH"],
+  credentials: false,
+};
 // const corsOptions = {
 //   origin: "https://alvent.netlify.app", 
 //   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
 //   credentials: true,
 // };
-app.use('*',corsOptions({
-    origin:"http://localhost:5174",
-    methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-    credentials:true,
- }))
+// const corsOptions = {
+//   origin: "http://localhost:5174", 
+//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
+//   credentials: true,
+// };
+
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
@@ -304,13 +305,6 @@ app.get('/userInfo', async (req, res) => {
   }
 });;
 
-// app.get('/dashboard',ensureAuth,(req,res)=>{
-//   res.send(`hello,${req.user.displayName}`)
-// })
-
-//ensureAuth - middleware to protect the route
-//Monthly sales performance
-
 
 
 app.post("/updt%Passwd/:googleId",async(req,res)=>{
@@ -337,31 +331,6 @@ const generateOTpw= function(){
   return  Math.floor(100000+Math.random()*90000)
 };
 
-
-// app.post("/verifyOTp/:userEmail",async(req,res)=>{
-//   const{userEmail}=req.params;
-//   const{verificationCode}=req.body;
-
-//   console.log('verificationCode:',verificationCode)
-  
-//   const findUser= await allUserModel.findOne({email: userEmail})
-//   if(!findUser){
-//     return res.status(403).json({msg:"INVALID USER"})
-//   };
-//   const findToken= await findUser.restpasswordOTP;
-//   const compOtp= await bcrypt.compare(verificationCode,findToken)
-//   if(compOtp){
-//     console.log('OTPyesssssssss:')
-//   }
-//   if(!compOtp){
-//     return res.status(403).json({msg:"INVALID OTP"})
-//   }
-//   await allUserModel.findOneAndUpdate(
-//     {email:userEmail},
-//     {isEmailVerified:true,
-//       restpasswordOTP:undefined,
-//       restpasswordOTP_Expires:undefined},{new:true})
-//   res.status(200).json({msg:"SUCCESSFUL"})})
 
 
 //ALL USER COUNT
