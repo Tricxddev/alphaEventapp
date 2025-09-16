@@ -12,7 +12,7 @@ const generateOTpw= function(){
 const newUserFXN=async(req,res)=>{
     try {
       const {name,email,passWd,confirmPassword}=req.body
-      console.log(req.body)
+      // console.log(req.body)
       
         if (!name || !email || !passWd) {
         return res.status(400).json({ msg: "All fields are required" });
@@ -26,7 +26,7 @@ const newUserFXN=async(req,res)=>{
         //     return res.status(400).json({ msg: "Password must be at least 8 characters long and contain at least one letter and one number" });
         // }
         const existinUser = await allUserModel.findOne({email:email})
-          console.log(existinUser)
+          // console.log(existinUser)
         const hashPass= await bcrypt.hash(passWd,12)
       
         if(existinUser === null || !existinUser.isEmailVerified ){

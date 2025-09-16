@@ -46,21 +46,19 @@ const paymentModel=require("./model/paymeNtDb")
 
 dotenv.config()
 //CONFIGS
+// const corsOptions = {
+//   origin: "*", 
+//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
+//   credentials: false,
+// };
 const corsOptions = {
-  origin: "*", 
-  methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-  credentials: false,
+  origin: ["https://alvent.netlify.app", "http://localhost:5173"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true,  // allows cookies/headers if you use them
 };
-// const corsOptions = {
-//   origin: "https://alvent.netlify.app", 
-//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-//   credentials: true,
-// };
-// const corsOptions = {
-//   origin: "http://localhost:5174", 
-//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-//   credentials: true,
-// };
+
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
 
 
 app.use(cors(corsOptions));
