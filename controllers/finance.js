@@ -2,7 +2,9 @@
 const Withdrawal = require('../model/Withdrawal');
 const {allUserModel,indiOrgModel} = require('../model/organizerDB')
 const mongoose =require("mongoose")
+const jwt=require("jsonwebtoken")
 const sendAdminEmail = require("../services/SendAdminMail");
+const axios = require('axios');
 
 // Create or Update bank details
 // exports.saveOrUpdateBankDetails = async (req, res) => {
@@ -66,12 +68,15 @@ exports.initiateWithdrawal = async (req, res) => {
   // const userId = req.params;
   const token = req.headers.authorization.split(" ")[1];
   const decoded = jwt.verify(token, process.env.refresTk);
-  const user = await allUserModel.findById(decoded.email);
-  const userId = user.userId;
+  console.log("decoded", decoded);
+  const user = await allUserModel.findOne({ email: decoded.email });
+  const userId = user.userID;
   // const userId = decoded.userId;
+// console.log("userId", userId);
+// console.log("user", user);
 
   try {
-    const indiUser = await indiOrgModel.findOne({ userID: userId });
+    const indiUser = await indiOrgModel.findOne({ email: decoded.email});
     if (!indiUser) {
       return res.status(404).json({ message: "Organizer not found" });
     }
@@ -109,7 +114,7 @@ const withdrawalID = await generateUniqueWithdrawalID();
 
        await Withdrawal.create({
         withdrawalID,
-        user: userId,
+        user: indiUser._id,
         amount,
         reason,
         status: 'failed',
@@ -124,7 +129,7 @@ const withdrawalID = await generateUniqueWithdrawalID();
     if (indiUser.totalEarning - amount < minimumBalance) {
       await Withdrawal.create({
         withdrawalID,
-        user: userId,
+        user: indiUser._id,
         amount,
         reason,
         status: 'failed',
@@ -139,7 +144,7 @@ const withdrawalID = await generateUniqueWithdrawalID();
     // Check if it violates minimum balance rule
     if (indiUser.totalEarning - amount < minimumBalance) {
       await Withdrawal.create({
-        user: userId,
+        user: indiUser._id,
         amount,
         reason,
         status: 'failed',
@@ -155,7 +160,7 @@ const withdrawalID = await generateUniqueWithdrawalID();
 
     const withdrawal = await Withdrawal.create({
       withdrawalID,
-      user: userId,
+      user: indiUser._id,
       name: req.user.name,
       email: req.user.email,
       amount,
@@ -194,21 +199,23 @@ const withdrawalID = await generateUniqueWithdrawalID();
 exports.approveWithdrawal = async (req, res) => {
   const { withdrawalID } = req.params;
   const tk = req.headers.authorization;
-
+  // console.log("withdrawalID:", withdrawalID);
  
   try {
     if (!tk) {
       return res.status(401).json({ message: "Access Denied!" });
     }
-
+    // console.log("Token:", tk);
     const token = tk.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.accessTk);
+    const decoded = jwt.verify(token, process.env.refresTk);
+    // console.log("Decoded token:", decoded);
 
-    if (!decoded || !decoded.userId) {
+    if (!decoded || !decoded.email) {
       return res.status(401).json({ message: "Invalid login details" });
     }
 
-    const user = await allUserModel.findById(decoded.userId);
+    const user = await allUserModel.findOne({ email: decoded.email });
+    // console.log("Admin user:", user);
 
     if (!user) {
       return res.status(404).json({ message: "User account not found!" });
@@ -217,40 +224,81 @@ exports.approveWithdrawal = async (req, res) => {
       return res.status(403).json({ message: "Only admins can approve withdrawals" });
     }
   // 1. Find the withdrawal by custom withdrawalID and populate the user
-    const withdrawal = await Withdrawal.findOne({ withdrawalID }).populate('user');
+    const withdrawal = await Withdrawal.findOne({ withdrawalID })/*.populate('user');*/
+    // console.log("Withdrawal found:", withdrawal);
     if (!withdrawal || withdrawal.status !== 'pending') {
       return res.status(404).json({ message: "Pending withdrawal not found" });
     }
 
     // 2. Get user ID properly
     const withdrawalUserId = withdrawal.user._id.toString();
+    // console.log("Withdrawal User ID:", withdrawalUserId);
 
     // 3. Fetch bank info
     const indiUser = await indiOrgModel.findOne({ userID: withdrawalUserId });
     const bankInfo = indiUser.bankDetails;
+    // console.log("Bank Info:", bankInfo);
     if (!bankInfo) {
       return res.status(404).json({ message: "Bank details not found" });
     }
 
     // // 5. Create Paystack recipient
-    const recipientRes = await axios.post(
-      'https://api.paystack.co/transferrecipient',
-      {
-        type: 'nuban',
-        name: withdrawal.user.name || 'User',
-        account_number: bankInfo.bankDetails.accountNumber,
-        bank_code: bankInfo.bankDetails.bankSortCode,
-        currency: 'NGN'
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
+    // const recipientRes = await axios.post(
+    //   'https://api.paystack.co/transferrecipient',
+    //   {
+    //     type: 'nuban',
+    //     name: bankInfo.accountHolderName || 'User',
+    //     account_number: bankInfo.accountNumber,
+    //     bank_code: bankInfo.bankSortCode,
+    //     currency: 'NGN'
+    //   },
+    //   {
+    //     headers: {
+    //       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+    //       'Content-Type': 'application/json'
+    //     }
+    //   }
+    // );
+    const https = require('https')
 
+    const params = JSON.stringify({
+      "type": "nuban",
+      "name": `${bankInfo.accountHolderName}`,
+      "account_number": `${bankInfo.accountNumber}`,
+      "bank_code": `${bankInfo.bankSortCode}`,
+      "currency": "NGN"
+    })
+
+    const options = {
+      hostname: 'api.paystack.co',
+      port: 443,
+      path: '/transferrecipient',
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    }
+
+    const req = https.request(options, res => {
+      let data = ''
+
+      res.on('data', (chunk) => {
+        data += chunk
+      });
+
+      res.on('end', () => {
+        console.log(JSON.parse(data))
+      })
+    }).on('error', error => {
+      console.error(error)
+    })
+
+    req.write(params)
+    req.end()
+    console.log(JSON.stringify(recipientRes.data, null, 2));
     const recipientCode = recipientRes.data.data.recipient_code;
+
 
     // 6. Initiate transfer
     const transferRes = await axios.post(
@@ -283,7 +331,7 @@ exports.approveWithdrawal = async (req, res) => {
 
 
       // Deduct from user's total earning
-      const user = await indiOrgModel.findById(withdrawalUserId);
+      const user = await indiOrgModel.findById({ userID: withdrawalUserId });
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }

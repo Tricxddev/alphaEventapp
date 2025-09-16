@@ -1,4 +1,5 @@
 const {allUserModel}=require("../model/organizerDB")
+const Otp = require("../model/otpdb")
 const bcrypt=require("bcrypt")
 const verifyMailer=require("../services/verifyUserMail")
 const express = require("express")
@@ -20,10 +21,9 @@ const generateOTpw= function(){
     const otpCode = generateOTpw().toString();
     //console.log('GENotpCode:',otpCode)
     const hashOtp = await bcrypt.hash(otpCode, 6);
-    await allUserModel.findOneAndUpdate(
-      newUser, { restpasswordOTP: hashOtp },
-      {restpasswordOTP_Expires:Date.now() + 10 * 60 * 1000},
-      { new: true });
+    await Otp.create(
+      { email: newUser.email, otp: hashOtp }
+    );
 
     const veriName = newUser.name; 
     const verifyMail = newUser.email; 
@@ -40,8 +40,8 @@ const generateOTpw= function(){
       await verifyMailer(otpCode, veriName, verifyMail);
     } catch (mailError) {
       // Rollback OTP changes if email sending fails
-      newUser.restpasswordOTP = undefined;
-      newUser.restpasswordOTP_Expires = undefined;
+      // newUser.restpasswordOTP = undefined;
+      // newUser.restpasswordOTP_Expires = undefined;
       console.error("Error sending email:", mailError);
       return res.status(500).json({ message: "Error sending email. Please try again later." });
     }
@@ -63,17 +63,22 @@ const generateOTpw= function(){
   try {
     // Find user by email
     const newUser = await allUserModel.findOne({ email });
+    console.log('newUser:',newUser)
     if (!newUser) {
       return res.status(404).json({ msg: "User not found" });
     }
-    const copmpareOTP= await bcrypt.compare(verificationCode, newUser.restpasswordOTP);
+    const userOtpRecord = await Otp.findOne({ email: newUser.email });
+    if (!userOtpRecord) {
+      return res.status(404).json({ msg: "OTP record not found. Please request a new OTP." });
+    }
+    const copmpareOTP= await bcrypt.compare(verificationCode, userOtpRecord.otp);
     if(!copmpareOTP){
       return res.status(403).json({ msg: "Invalid OTP" });
     }
     // Check if OTP is expired less than 10 minutes
-    if (newUser.restpasswordOTP_Expires < Date.now()+ 10 * 60 * 1000) {
-      return res.status(403).json({ msg: "OTP has expired" });
-    }
+    // if (userOtpRecord.otp_Expires < Date.now() + 10 * 60 * 1000) {
+    //   return res.status(403).json({ msg: "OTP has expired" });
+    // }
     res.status(200).json({ msg: "OTP verified successfully" });
   } catch (error) {
     console.error("Error finding user:", error);
