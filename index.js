@@ -238,6 +238,7 @@ const ticketsoldOverview=require("./routes/myEventDashRout")
 const initiatewithDrawFunds=require("./routes/financeRout")
 const approveWithdrawal=require("./routes/financeRout")
 const withdrawalHistory=require("./routes/financeRout")
+const allSubscribers=require("./routes/sunbscribersRout")
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -270,6 +271,7 @@ app.use("/api",ticketsoldOverview);// ORGANISER DASHBOARD VIEW UPCOMING EVENT AP
 app.use("/api",initiatewithDrawFunds);// WITHDRAW FUNDS API
 app.use("/api",approveWithdrawal);// ADMIN APPROVE WITHDRAWAL API
 app.use("/api",withdrawalHistory);// WITHDRAWAL HISTORY API
+app.use("/api",allSubscribers);// GET ALL SUBSCRIBERS API
 
 app.get('/userInfo', async (req, res) => {
   try {

@@ -2,18 +2,21 @@ const nodemailer =require("nodemailer")
 const SendmailTransport = require("nodemailer/lib/sendmail-transport")
 const dotenv = require("dotenv")
 const { express } = require("express")
-
+const resend = require("resend");
+const resendClient = new resend.Resend(process.env.RESEND_API_frontend);
 const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
-   const botask= nodemailer.createTransport({
-        service:'gmail',
-        auth:{
-            user:`${process.env.botMailer}`,
-            pass:`${process.env.botMailpwd}`
-        }
-    })
+//    const botask= nodemailer.createTransport({
+//         service:'gmail',
+//         auth:{
+//             user:`${process.env.botMailer}`,
+//             pass:`${process.env.botMailpwd}`
+//         }
+//     })
 
+try{
 
-const sendingDetails= {
+// const sendingDetails= {
+await resendClient.emails.send({
     from:process.env.botMailer,
     to:verifyMail,
     subject:`ALVENT: HEY!,${veriName} VERIFY YOUR ACCOUNT`,
@@ -124,13 +127,18 @@ const sendingDetails= {
 </body>
 </html>
 `
+})
+// }
 
-}
-
-const sendMailAtion= await botask.sendMail(sendingDetails)
+// const sendMailAtion= await botask.sendMail(sendingDetails)
 
 
  //console.log(sendMailAtion)
+}catch (error) {
+    console.error("Error sending email:", error);
+     return false;
+    // throw new Error("Subscription confirmation email could not be sent.");
+  }
 }
 
 module.exports=verifyMailer

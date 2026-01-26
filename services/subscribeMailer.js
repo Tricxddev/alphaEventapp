@@ -1,18 +1,20 @@
 const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
+const resend = require("resend");
 dotenv.config();
-
+const resendClient = new resend.Resend(process.env.RESEND_API_frontend);
 const sendSubConfirmatn = async (email) => {
   try {
-    const botask = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.botMailer,
-        pass: process.env.botMailpwd,
-      },
-    });
+    // const botask = nodemailer.createTransport({
+    //   service: "gmail",
+    //   auth: {
+    //     user: process.env.botMailer,
+    //     pass: process.env.botMailpwd,
+    //   },
+    // });
 
-    const mailOptions = {
+   // const mailOptions = {
+   await resendClient.emails.send({
       from: process.env.botMailer,
       to: email,
       subject: "Subscription Successful: Welcome to ALVENT!",
@@ -106,16 +108,19 @@ const sendSubConfirmatn = async (email) => {
 
 </body>
 </html>`
-    };
+    });
+    //}
 
-    const sendMailAction = await botask.sendMail(mailOptions);
-    if(!sendMailAction){
-      return res.status(400).json({msg:"ERROR IN SENDING MAIL"})
-    }
-    console.log("Subscription confirmation email sent successfully:", sendMailAction.response);
+    // const sendMailAction = await botask.sendMail(mailOptions);
+    // if(!sendMailAction){
+    //   return res.status(400).json({msg:"ERROR IN SENDING MAIL"})
+    // }
+    // console.log("Subscription confirmation email sent successfully:", sendMailAction.response);
+    return true;
   } catch (error) {
     console.error("Error sending subscription confirmation email:", error);
-    throw new Error("Subscription confirmation email could not be sent.");
+     return false;
+    // throw new Error("Subscription confirmation email could not be sent.");
   }
 };
 
