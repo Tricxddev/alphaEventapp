@@ -37,7 +37,12 @@ const SUBSCRIBERFXN= async(req,res)=>{
     }
 }catch(err){res.status(400).json({msg:err.message})}
 }
-
+const GETALLSUBSCRIBERFXN= async(req,res)=>{
+  try {
+    const allSubscribers= await subscriberModel.find({})
+    res.status(200).json({subscribers:allSubscribers})
+  }catch(err){res.status(400).json({msg:err.message})}  
+}
 const UNSUBSCRIBERFXN= async(req,res)=>{
   try {
     const {email}=req.body
@@ -67,5 +72,6 @@ const UNSUBSCRIBERFXN= async(req,res)=>{
 
 module.exports={
   SUBSCRIBERFXN,
-  UNSUBSCRIBERFXN
+  UNSUBSCRIBERFXN,
+  GETALLSUBSCRIBERFXN
 }
