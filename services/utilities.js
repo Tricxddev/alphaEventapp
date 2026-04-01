@@ -9,7 +9,7 @@ const landingFtPagination = (req)=>{
 //module.exports=landingFtPagination
 
 const landingtrdPagination = (req)=>{
-    const limit=parseInt(req.query.limit) || 2
+    const limit=parseInt(req.query.limit) || 4
 
     return{limit}
 }
