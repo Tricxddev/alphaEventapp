@@ -52,7 +52,7 @@ dotenv.config()
 //   credentials: false,
 // };
 const corsOptions = {
-  origin: ["https://alvent.netlify.app", "http://localhost:5173","https://myalvent.com"],
+  origin: ["https://alvent.netlify.app", "http://localhost:5174","https://myalvent.com"],
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true,  // allows cookies/headers if you use them
 };
