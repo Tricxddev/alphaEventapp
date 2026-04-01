@@ -46,21 +46,25 @@ const paymentModel=require("./model/paymeNtDb")
 
 dotenv.config()
 //CONFIGS
+// const corsOptions = {
+//   origin: "*", 
+//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
+//   credentials: false,
+// };
 const corsOptions = {
-  origin: "*", 
-  methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-  credentials: false,
+  origin: ["https://alvent.netlify.app", "http://localhost:5173","https://myalvent.com"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  credentials: true,  // allows cookies/headers if you use them
 };
-// const corsOptions = {
-//   origin: "https://alvent.netlify.app", 
-//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-//   credentials: true,
-// };
-// const corsOptions = {
-//   origin: "http://localhost:5174", 
-//   methods:["GET", "POST", "PUT", "DELETE","PATCH"],
-//   credentials: true,
-// };
+
+// app.use(cors(corsOptions));
+// app.options("*", cors(corsOptions));
+// Middleware to log incoming origin
+app.use((req, res, next) => {
+  console.log("Incoming request origin:", req.headers.origin);
+  next();
+});
+
 
 
 app.use(cors(corsOptions));
@@ -196,7 +200,7 @@ app.get('/auth/google/callback',
     })
   
     // Successful authentication, redirect to your desired route
-   res.redirect(`https://alvent.netlify.app/OnboardingMain/?token=${token}`);
+   res.redirect(`https://myalvent.com/OnboardingMain/?token=${token}`);
 
   } catch (error) {
     console.error('Authentication error:', error);
@@ -234,6 +238,7 @@ const ticketsoldOverview=require("./routes/myEventDashRout")
 const initiatewithDrawFunds=require("./routes/financeRout")
 const approveWithdrawal=require("./routes/financeRout")
 const withdrawalHistory=require("./routes/financeRout")
+const allSubscribers=require("./routes/sunbscribersRout")
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -266,6 +271,7 @@ app.use("/api",ticketsoldOverview);// ORGANISER DASHBOARD VIEW UPCOMING EVENT AP
 app.use("/api",initiatewithDrawFunds);// WITHDRAW FUNDS API
 app.use("/api",approveWithdrawal);// ADMIN APPROVE WITHDRAWAL API
 app.use("/api",withdrawalHistory);// WITHDRAWAL HISTORY API
+app.use("/api",allSubscribers);// GET ALL SUBSCRIBERS API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -604,7 +610,7 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       {
         email,
         amount: calculatedTotal * 100,
-        callback_url: "https://alvent.netlify.app"
+        callback_url: "https://myalvent.com/"
       },
       {
         headers: {

@@ -11,9 +11,9 @@ const generateOTpw= function(){
 
 const newUserFXN=async(req,res)=>{
     try {
-      const {name,email,passWd}=req.body
-    
-        
+      const {name,email,passWd,confirmPassword}=req.body
+      // console.log(req.body)
+      
         if (!name || !email || !passWd) {
         return res.status(400).json({ msg: "All fields are required" });
         }
@@ -26,7 +26,7 @@ const newUserFXN=async(req,res)=>{
         //     return res.status(400).json({ msg: "Password must be at least 8 characters long and contain at least one letter and one number" });
         // }
         const existinUser = await allUserModel.findOne({email:email})
-          console.log(existinUser)
+          // console.log(existinUser)
         const hashPass= await bcrypt.hash(passWd,12)
       
         if(existinUser === null || !existinUser.isEmailVerified ){
@@ -47,10 +47,15 @@ const newUserFXN=async(req,res)=>{
           passWd:hashPass,
           lastLogin: new Date()      
         });
-        await Otp.create({
-          email,
-          otp:hashOtp,
-        })
+        // await Otp.create({
+        //   email,
+        //   otp:hashOtp,
+        // })
+        await Otp.updateOne(
+          { email },
+          { otp: hashOtp },
+          { upsert: true } // insert if not exists, update if exists
+        );
         const veriName= await newUser.name;
         const verifyMail= await newUser.email;
         const veriToken= await newUser.verifyOTpw;

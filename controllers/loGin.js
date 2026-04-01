@@ -8,7 +8,7 @@ const jwt=require("jsonwebtoken")
 const loginFXN=async(req,res)=>{
     try{
     const{email,passWd}=req.body
-    // console.log('payloadPPP:',req.body)
+    console.log('payloadPPP:',req.body)
 
     if (!email || !passWd) {
         return res.status(400).json({ msg: "All fields are required" });
