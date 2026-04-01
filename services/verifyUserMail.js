@@ -128,7 +128,7 @@ await resendClient.emails.send({
 </html>
 `
 })
-// }
+// //}
 
 // const sendMailAtion= await botask.sendMail(sendingDetails)
 
