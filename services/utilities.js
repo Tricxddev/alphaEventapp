@@ -13,4 +13,4 @@ const landingtrdPagination = (req)=>{
 
     return{limit}
 }
-module.exports={landingtrdPagination,landingFtPagination}
+module.exports={landingtrdPagination,landingFtPagination}//update
