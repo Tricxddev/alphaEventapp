@@ -16,6 +16,7 @@ const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
 
 try{
 console.log("SENDING MAIL TO:",OtpGen,veriName,verifyMail)
+console.log("RESEND:", process.env.RESEND_API_backend ? "LOADED" : "MISSING");
 // const sendingDetails= {
 await resendClient.emails.send({
     from:process.env.botMailer ,
