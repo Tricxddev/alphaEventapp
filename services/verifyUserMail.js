@@ -2,8 +2,9 @@ const nodemailer =require("nodemailer")
 const SendmailTransport = require("nodemailer/lib/sendmail-transport")
 const dotenv = require("dotenv")
 const { express } = require("express")
-const resend = require("resend");
-const resendClient = new resend.Resend(process.env.RESEND_API_frontend);
+//const resend = require("resend");
+const {Resend} = require("resend")
+const resendClient = new Resend(process.env.RESEND_API_backend);
 const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
 //    const botask= nodemailer.createTransport({
 //         service:'gmail',
@@ -14,10 +15,10 @@ const verifyMailer = async (OtpGen,veriName,verifyMail)=>{
 //     })
 
 try{
-
+console.log("SENDING MAIL TO:",OtpGen,veriName,verifyMail)
 // const sendingDetails= {
 await resendClient.emails.send({
-    from:process.env.botMailer,
+    from:process.env.botMailer ,
     to:verifyMail,
     subject:`ALVENT: HEY!,${veriName} VERIFY YOUR ACCOUNT`,
     text:`<br><br>HERE IS THE TOKEN:<h2>${OtpGen}</h2>     `,
@@ -141,4 +142,4 @@ await resendClient.emails.send({
   }
 }
 
-module.exports=verifyMailer
+module.exports= verifyMailer ;

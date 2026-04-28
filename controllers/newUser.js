@@ -3,6 +3,7 @@ const Otp=require("../model/otpdb")
 const bcrypt=require("bcrypt")
 const mongoose =require("mongoose")
 const jwt=require("jsonwebtoken")
+const resend = require("resend");
 const verifyMailer=require("../services/verifyUserMail")
 
 const generateOTpw= function(){
@@ -36,6 +37,7 @@ const newUserFXN=async(req,res)=>{
           { expiresIn: '1h' },
         )
         const OtpGen=  generateOTpw().toString()
+        console.log("OTP GENERATED:",OtpGen)
         const hashOtp = await bcrypt.hash(OtpGen, 6);
         const nameCap= await name.toUpperCase()
         const newUser= await allUserModel.create({
@@ -59,7 +61,9 @@ const newUserFXN=async(req,res)=>{
         const veriName= await newUser.name;
         const verifyMail= await newUser.email;
         const veriToken= await newUser.verifyOTpw;
-        await verifyMailer(OtpGen,veriName,verifyMail);
+        if(
+        await verifyMailer(OtpGen,veriName,verifyMail)
+        )throw new Error("ERROR IN MAIL SENDING")
       
         await indiOrgModel.create({
           IndName:{
