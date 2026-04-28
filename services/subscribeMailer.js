@@ -2,7 +2,7 @@ const nodemailer = require("nodemailer");
 const dotenv = require("dotenv");
 const resend = require("resend");
 dotenv.config();
-const resendClient = new resend.Resend(process.env.RESEND_API_frontend);
+const resendClient = new resend.Resend(process.env.RESEND_API_backend);
 const sendSubConfirmatn = async (email) => {
   try {
     // const botask = nodemailer.createTransport({
