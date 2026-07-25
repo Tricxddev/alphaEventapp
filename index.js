@@ -251,6 +251,7 @@ const createEvent=require("./routes/creatEventRout")
 const subscribe= require("./routes/sunbscribersRout")
 const UNSubscribe= require("./routes/sunbscribersRout")
 const eventDetail=require("./routes/eventDetailRout")
+const socialDetail=require("./routes/eventDetailRout")
 const organizerEvents=require("./routes/organizerEventRout")
 const trendEvnt=require("./routes/trendEventRout")
 const featuredEvnt=require("./routes/featuredEvntRout")
@@ -311,6 +312,7 @@ app.use("/api",allSubscribers);// GET ALL SUBSCRIBERS API
 app.use("/api",allEvents);
 app.use("/api",dashbdgreetings);// DASHBOARD GREETINGS API
 app.use("/api",purchaseList);// PURCHASE LIST API
+app.use("/api",socialDetail);// SOCIAL DETAILS API
 
 app.get('/userInfo', async (req, res) => {
   try {

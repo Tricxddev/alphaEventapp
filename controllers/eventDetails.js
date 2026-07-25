@@ -63,5 +63,122 @@ const eventDetailsFXN=async(req,res)=>{
       })
     } catch (error) {return res.status(400).json({msg:error.message})}
   };
+const socialAppeventFXN= async(req,res)=>{
+  const {eventID}=req.params
+  try {
+    const evnttd= await eventModel.findOne({eventID})
+      if (!evnttd) {
+        return res.status(404).json({ msg: "Event not found" });
+      }
+      const formattedEventStart = moment(evnttd.eventDate.eventStart).format("MMMM Do YYYY");
+      const formattedEventEnd = moment(evnttd.eventDate.eventEnd).format("MMMM Do YYYY");
+      const eventcountry = evnttd.venueInformation.eventCountry || "Unknown Country";
+      
+      const eventState = evnttd.venueInformation.eventState || "Unknown State";
+      const eventCity = evnttd.venueInformation.eventCity || "Unknown City";
+      const eventVenue = evnttd.venueInformation.address || "Unknown Venue";
 
-  module.exports=eventDetailsFXN
+
+      const userId = evnttd.userID.toString();
+      
+      let organizerName = "Unknown Organizer";
+      // //console.log("userID:",userId)
+
+      // if (userId) {
+        const organizer = await allUserModel.findOne({ userID: userId });
+       
+        organizerName = organizer.name || "Unknown Organizer";
+      // }
+      const evnttyWithOrgNames = {
+        ...evnttd._doc, // Spread the event document fields
+        organizerName,
+        eventStart: formattedEventStart,
+        eventEnd: formattedEventEnd,
+      };
+      console.log("evnttyWithOrgNames:",evnttyWithOrgNames);
+      const fordate=evnttyWithOrgNames.eventDate.eventStart;
+      const date = moment(fordate).format("dddd, MMMM D");
+      const fortime=`${evnttyWithOrgNames.eventTime.start} ${evnttyWithOrgNames.eventTime.startClock}`;
+      const time = moment(fortime, "h:mm A").format("h:mm A");
+      const address = evnttyWithOrgNames.venueInformation;
+      const eventDetails = {
+        eventID: evnttyWithOrgNames.eventID,
+        eventTitle: evnttyWithOrgNames.eventTitle,
+        eventImgURL: evnttyWithOrgNames.eventImgURL,
+        eventSchedule: {
+          date:date,
+          time:time,
+          address:address} ,
+        eventDesc: evnttyWithOrgNames.eventDesc,
+        eventPerks:evnttyWithOrgNames.eventCategory,
+        tickets: evnttyWithOrgNames.tickets,
+        eventTags: evnttyWithOrgNames.eventTags,
+        organizerID: evnttyWithOrgNames.userID,
+        organizerName: evnttyWithOrgNames.organizerName,
+      };
+
+
+    res.send(`
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>${eventDetails.eventTitle}</title>
+
+<meta property="og:title"
+content="${eventDetails.eventTitle}" />
+
+<meta property="og:description"
+content="${eventDetails.eventDesc}" />
+
+<meta property="og:image"
+content="${eventDetails.eventImgURL}" />
+
+<meta property="og:url"
+content="https://myalvent.com/eventsdetailshome/${eventDetails.eventID}" />
+
+<meta property="og:type"
+content="website" />
+
+<meta property="og:site_name"
+content="Alpha Event"/>
+
+<meta name="twitter:card"
+content="summary_large_image"/>
+
+<meta name="twitter:title"
+content="${eventDetails.eventTitle}"/>
+
+<meta name="twitter:description"
+content="${eventDetails.eventDesc}"/>
+
+<meta name="twitter:image"
+content="${eventDetails.eventImgURL}"/>
+
+</head>
+
+<body>
+
+Loading...
+
+<script>
+
+window.location.replace(
+"https://myalvent.com/eventsdetailshome/${eventDetails.eventID}"
+);
+
+</script>
+
+</body>
+
+</html>
+`);
+
+  } catch (error) {
+    return res.status(400).json({msg:error.message})
+  }
+}
+  module.exports={eventDetailsFXN,socialAppeventFXN}
