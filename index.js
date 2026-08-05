@@ -195,7 +195,7 @@ app.get('/', (req, res) => {
 // Route to initiate Google OAuth
 app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
 
-console.log("Google OAuth initiation route configured successfully.");
+// console.log("Google OAuth initiation route configured successfully.");
 
 // Google OAuth callback route
 app.get('/auth/google/callback',
@@ -203,7 +203,7 @@ app.get('/auth/google/callback',
       if (req.query.code) {
       // Decode the token code parameter to clean out %2F and similar anomalies
       req.query.code = decodeURIComponent(req.query.code);
-      console.log("Decoded code parameter:", req.query.code);
+      // console.log("Decoded code parameter:", req.query.code);
     }
     next();
   },
@@ -276,6 +276,9 @@ const allSubscribers=require("./routes/sunbscribersRout")
 const allEvents=require("./routes/allEventzRoute")
 const dashbdgreetings=require("./routes/dashbdgreetRout")
 const purchaseList=require("./routes/purchaseListRout")
+const pendingWithdrawal=require("./routes/financeRout")
+const withdrawalDetails=require("./routes/financeRout")
+
 // app.use(checkSession)
 // app.use(logActivity)
 //ROUTERS
@@ -313,6 +316,8 @@ app.use("/api",allEvents);
 app.use("/api",dashbdgreetings);// DASHBOARD GREETINGS API
 app.use("/api",purchaseList);// PURCHASE LIST API
 app.use("/api",socialDetail);// SOCIAL DETAILS API
+app.use("/api",pendingWithdrawal);// PENDING WITHDRAWAL API
+app.use("/api",withdrawalDetails);// WITHDRAWAL DETAILS API
 
 app.get('/userInfo', async (req, res) => {
   try {
@@ -390,7 +395,7 @@ app.get("/userNameFetch/",async(req,res)=>{
   const{email}=req.query
     
   const finduser= await allUserModel.findOne({email:email});
-  console.log("finduser:",finduser)
+  // console.log("finduser:",finduser)
   return res.status(200).json({
       msg:"SUCCESSFUL",
       userDetails:finduser
@@ -580,9 +585,9 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
     // console.log(req.path)
     const { tickets, email,userName,phoneNumber, totalPurchase } = req.body;
 
-    console.log("user name:", req.body.userName);
+    // console.log("user name:", req.body.userName);
     if(!req.body.userName || req.body.userName.trim() === "") {
-      console.log("User name is missing or empty.");
+      // console.log("User name is missing or empty.");
     }
     //if (!eventID || !tickets || !email) return res.status(400).json({ msg: "Missing required fields" });
 
@@ -612,9 +617,9 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
 
     for (const ticket of tickets) {
       const findevntID = await eventModel.findOne({ eventID });
-      console.log("findevntID:",findevntID)
+      // console.log("findevntID:",findevntID)
       const ticketDetails = findevntID.tickets.find(t => t._id.toString() === ticket._id);
-      console.log("TICKET DETAILS:",ticketDetails)
+      // console.log("TICKET DETAILS:",ticketDetails)
       const totalQty = tickets.reduce((sum, ticket) => sum + (ticket.quantity), 0);
       
       if (!findevntID) return res.status(404).json({ msg: "Event not found" });
@@ -630,10 +635,10 @@ app.post("/buyTicket-initiate/:eventID", async (req, res) => {
       //include 5% service charge in total
       calculatedTotal_servicecharge = Math.round(calculatedTotal * 1.05 * 100) / 100;
 
-      console.log("Calculated Total with Service Charge:", calculatedTotal_servicecharge);
+      // console.log("Calculated Total with Service Charge:", calculatedTotal_servicecharge);
 
       servicecharge = calculatedTotal_servicecharge - calculatedTotal;
-      console.log("Service Charge:", servicecharge);
+      // console.log("Service Charge:", servicecharge);
 
 
 
@@ -736,10 +741,10 @@ app.post("/paystack/webhook", express.json(), async (req, res) => {
       .createHmac('sha512', secret)
       .update(JSON.stringify(req.body))
       .digest('hex');
-console.log("Calculated:", hash);
-    console.log("Received:", signature);
+// console.log("Calculated:", hash);
+    // console.log("Received:", signature);
     if (hash !== signature) {
-       console.log(" InValid Paystack webhook received:", req.body.event);
+       // console.log(" InValid Paystack webhook received:", req.body.event);
       return res.sendStatus(401); // Unauthorized
       
     }else{ console.log("Valid Paystack webhook received:", req.body.event);}
@@ -756,19 +761,19 @@ console.log("Calculated:", hash);
     if (!txn) return res.sendStatus(404);
     // if (txn.paymentStatus === "completed") return res.sendStatus(200);
     if (txn.paymentStatus === "completed") {
-      console.log("Transaction already completed:", reference);
+      // console.log("Transaction already completed:", reference);
       return res.sendStatus(200);
     }
     if (txn.paymentStatus !== "pending") {
-      console.log("Unexpected payment status:", txn.paymentStatus);
+      // console.log("Unexpected payment status:", txn.paymentStatus);
       return res.sendStatus(200);
     }
     if (txn.paymentStatus === "pending"){
     const findEvent= await eventModel.findOne({eventID:txn.eventID})
    
         //update indidata
-        console.log(findEvent.userID) 
-        console.log(txn.totalPurchase) 
+        // console.log(findEvent.userID) 
+        // console.log(txn.totalPurchase) 
        const updateINDTOT= await indiOrgModel.updateOne(
             {
               userID: new mongoose.Types.ObjectId(findEvent.userID),
@@ -830,7 +835,7 @@ console.log("Calculated:", hash);
       });
     });
     
-    console.log("getTotalTicketsIssued:",totalTicketsSold)
+    // console.log("getTotalTicketsIssued:",totalTicketsSold)
 
     // Update the ticketsSold field in your event model
     await eventModel.updateOne(
@@ -855,7 +860,7 @@ console.log("Calculated:", hash);
   }
 
 
-    console.log(`Transaction processed successfully for:${txn.email}`);
+    // console.log(`Transaction processed successfully for:${txn.email}`);
     res.sendStatus(200); // Success
   }
   } catch (err) {

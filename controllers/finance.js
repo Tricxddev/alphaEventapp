@@ -195,7 +195,6 @@ const withdrawalID = await generateUniqueWithdrawalID();
 };
 
 
-
 // Phase 2: Admin verifies and processes withdrawal
 exports.approveWithdrawal = async (req, res) => {
   const { withdrawalID } = req.params;
@@ -225,79 +224,90 @@ exports.approveWithdrawal = async (req, res) => {
       return res.status(403).json({ message: "Only admins can approve withdrawals" });
     }
   // 1. Find the withdrawal by custom withdrawalID and populate the user
-    const withdrawal = await Withdrawal.findOne({ withdrawalID })/*.populate('user');*/
+    const withdrawal = await Withdrawal.findOne({ withdrawalID }).populate('user');
     // console.log("Withdrawal found:", withdrawal);
     if (!withdrawal || withdrawal.status !== 'pending') {
       return res.status(404).json({ message: "Pending withdrawal not found" });
     }
+    // console.log("Withdrawal details:", withdrawal);
 
     // 2. Get user ID properly
-    const withdrawalUserId = withdrawal.user._id.toString();
-    // console.log("Withdrawal User ID:", withdrawalUserId);
+    const withdrawalUserId = withdrawal.user.userID; // Assuming userID is stored in the user document
+    const withdrawalUser_id = withdrawal.user._id; // Assuming _id is stored in the user document
+    // console.log("Withdrawal User ID:", withdrawalUserId, "Withdrawal User _id:", withdrawalUser_id);
+    if(!withdrawalUserId || withdrawalUserId===null){
+      return res.status(404).json({ message: "User ID not found for this withdrawal" });
+    }
 
     // 3. Fetch bank info
     const indiUser = await indiOrgModel.findOne({ userID: withdrawalUserId });
-    const bankInfo = indiUser.bankDetails;
-    // console.log("Bank Info:", bankInfo);
+    // console.log("Organizer details:", indiUser);
+     const bankInfo = indiUser.bankDetails;
+    console.log("Bank Info:", bankInfo);
     if (!bankInfo) {
       return res.status(404).json({ message: "Bank details not found" });
     }
 
     // // 5. Create Paystack recipient
-    // const recipientRes = await axios.post(
-    //   'https://api.paystack.co/transferrecipient',
-    //   {
-    //     type: 'nuban',
-    //     name: bankInfo.accountHolderName || 'User',
-    //     account_number: bankInfo.accountNumber,
-    //     bank_code: bankInfo.bankSortCode,
-    //     currency: 'NGN'
-    //   },
-    //   {
-    //     headers: {
-    //       Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-    //       'Content-Type': 'application/json'
-    //     }
-    //   }
-    // );
-    const https = require('https')
-
-    const params = JSON.stringify({
-      "type": "nuban",
-      "name": `${bankInfo.accountHolderName}`,
-      "account_number": `${bankInfo.accountNumber}`,
-      "bank_code": `${bankInfo.bankSortCode}`,
-      "currency": "NGN"
-    })
-
-    const options = {
-      hostname: 'api.paystack.co',
-      port: 443,
-      path: '/transferrecipient',
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
-        'Content-Type': 'application/json'
+    const recipientRes = await axios.post(
+      'https://api.paystack.co/transferrecipient',
+      {
+        type: 'nuban',
+        name: bankInfo.accountHolderName || 'User',
+        account_number: (bankInfo.accountNumber).trim(),
+        bank_code: bankInfo.bankSortCode,
+        currency: 'GHS'
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          'Content-Type': 'application/json'
+        }
       }
+    );
+    if (!recipientRes.data || !recipientRes.data.status) {
+      return res.status(400).json({ message: "Failed to create Paystack recipient" });
     }
 
-    const req = https.request(options, res => {
-      let data = ''
+    // const https = require('https')
 
-      res.on('data', (chunk) => {
-        data += chunk
-      });
+    // const params = JSON.stringify({
+    //   "type": "nuban",
+    //   "name": `${bankInfo.accountHolderName}`,
+    //   "account_number": `${bankInfo.accountNumber}`,
+    //   "bank_code": `${bankInfo.bankSortCode}`,
+    //   "currency": "NGN"
+    // })
+    // // console.log("Params:", params);
 
-      res.on('end', () => {
-        console.log(JSON.parse(data))
-      })
-    }).on('error', error => {
-      console.error(error)
-    })
+    // const options = {
+    //   hostname: 'api.paystack.co',
+    //   port: 443,
+    //   path: '/transferrecipient',
+    //   method: 'POST',
+    //   headers: {
+    //     Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+    //     'Content-Type': 'application/json'
+    //   }
+    // }
 
-    req.write(params)
-    req.end()
-    console.log(JSON.stringify(recipientRes.data, null, 2));
+    // const req = https.request(options, res => {
+    //   let data = ''
+
+    //   res.on('data', (chunk) => {
+    //     data += chunk
+    //   });
+
+    //   res.on('end', () => {
+    //     console.log(JSON.parse(data))
+    //   })
+    // }).on('error', error => {
+    //   console.error(error)
+    // })
+
+    // req.write(params)
+    // req.end()
+    // console.log(JSON.stringify(recipientRes.data, null, 2));
     const recipientCode = recipientRes.data.data.recipient_code;
 
 
@@ -306,7 +316,7 @@ exports.approveWithdrawal = async (req, res) => {
       'https://api.paystack.co/transfer',
       {
         source: 'balance',
-        amount: withdrawal.amount * 100,
+        amount: Math.round(withdrawal.amount * 100),
         recipient: recipientCode,
         reason: withdrawal.reason
       },
@@ -354,8 +364,19 @@ exports.approveWithdrawal = async (req, res) => {
     }
 
   } catch (error) {
-    console.error('Approve withdrawal error:', error.message);
-    return res.status(500).json({ message: "Approval failed", error: error.message });
+     // This extracts the specific string validation error hidden inside Axios
+  const paystackErrorMessage = error.response && error.response.data 
+    ? error.response.data.message 
+    : error.message;
+
+  console.error('Approve withdrawal error details:', error.response ? error.response.data : error.message); 
+  
+  return res.status(500).json({ 
+    message: "Approval failed", 
+    error: paystackErrorMessage 
+  }); 
+    // console.error('Approve withdrawal error:', error.message);
+    // return res.status(500).json({ message: "Approval failed", error: error.message });
   }
 };
 
@@ -428,3 +449,88 @@ exports.getWithdrawals = async (req, res) => {
   }
 };
 
+exports.getPENDINGWithdrawalsADMINview = async (req, res) => {
+  try {
+    const tk = req.headers.authorization;
+    if (!tk) {
+      return res.status(401).json({ message: "Access Denied!" });
+    }
+    const token = tk.split(" ")[1];
+    const decoded = jwt.verify(token, process.env.refresTk);
+
+    if (!decoded || !decoded.email) {
+      return res.status(401).json({ message: "Invalid login details" });
+    }
+
+    const user = await allUserModel.findOne({ email: decoded.email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User account not found!" });
+    }
+    if (user.role !== 'adminz') {
+      return res.status(403).json({ message: "Only admins can view all withdrawals" });
+    }
+    let { page = 1, limit = 10 } = req.query;
+
+    // Parse pagination values to integers
+    page = parseInt(page, 10);
+    limit = parseInt(limit, 10);
+
+    if (isNaN(page) || page < 1 || isNaN(limit) || limit < 1) {
+      return res.status(400).json({ message: 'Invalid pagination values' });
+    }
+
+    // Find all withdrawals for admin view, no status filtering
+    const withdrawals = await Withdrawal.find({
+      status: { $in: ["pending", "failed"] }  // Only fetch pending and failed withdrawals
+    })
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip((page - 1) * limit) 
+    const total = await Withdrawal.countDocuments();
+
+    res.status(200).json({
+      withdrawals, // Each will have its status field (if your schema includes it)
+      total,
+      currentPage: page,
+      totalPages: Math.ceil(total / limit),
+    });
+  } catch (error) {
+    console.error('Error fetching withdrawals for admin view:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+}
+exports.withdrawalDetails = async(req,res)=>{
+  try{
+    const {withdrawalID}=req.params;
+    const withdrawal=await Withdrawal.findOne({withdrawalID}).populate('user').lean();
+    const findIndOrguserID = await indiOrgModel.findOne({userID:withdrawal.user.userID}).lean();
+    // console.log("Withdrawal user:", withdrawal.user.userID);
+    // console.log("findIndOrguserID", findIndOrguserID);
+    if(!withdrawal){
+      return res.status(404).json({message:"Withdrawal not found"})
+    }
+    // console.log("Withdrawal details:", withdrawal);
+    withDetails={
+      withdrawalID:withdrawal.withdrawalID,
+      user:{
+        name:withdrawal.user.IndName.firstName,
+        email:withdrawal.user.email,
+        userID:withdrawal.user.userID,
+        user_id:withdrawal.user._id,
+      },
+      totalEarning:withdrawal.user.totalEarning,
+      reason:withdrawal.reason,
+      status:withdrawal.status,
+      newBalance:withdrawal.user.withdrawableBalance,
+      failureReason:withdrawal.failureReason,
+      transferCode:withdrawal.transferCode,
+      createdAt:withdrawal.createdAt,
+      updatedAt:withdrawal.updatedAt
+    }
+    res.status(200).json({withdrawal: withDetails})
+  }catch(error){
+    console.error('Error fetching withdrawal details:', error);
+    res.status(500).json({ message: 'Server error. Please try again later.' });
+  }
+}

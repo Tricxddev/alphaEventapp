@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const {authFxn} = require('../middleware/auth');
-const { initiateWithdrawal, updateTotalEarnings, approveWithdrawal, getWithdrawals } = require('../controllers/finance');
+const { initiateWithdrawal, updateTotalEarnings, approveWithdrawal, getWithdrawals,getPENDINGWithdrawalsADMINview,withdrawalDetails } = require('../controllers/finance');
 
 // Bank details
 // router.post('/bank-details', authFxn, saveOrUpdateBankDetails); // POST /api/bank-details
@@ -10,6 +10,12 @@ router.post('/request-withdrawal/:userId', authFxn, initiateWithdrawal); // POST
 
 // Get withdrawal history
 router.get('/withdrawal-history/:userId', authFxn, getWithdrawals); // POST /api/request-withdrawal
+
+// Get pending withdrawals (admin view)
+router.get('/pendingWithdrawal', authFxn, getPENDINGWithdrawalsADMINview);
+
+// Get withdrawal details
+router.get('/withdrawalDetails/:withdrawalID', authFxn, withdrawalDetails);
 
 // Update total earning
 // router.put('/update/earnings', authFxn, updateTotalEarnings);

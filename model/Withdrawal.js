@@ -19,11 +19,11 @@ const withdrawalSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["pending", "successful", "failed"],
+    enum: ["pending", "approved", "failed","paid","successful"],
     default: "pending"
   },
-  newBalance: String,
-  failureReason: String,
+  newBalance: { type: String, default: null },
+  failureReason: { type: String, default: null },
   transferCode: {
     type: String,
     default: null

@@ -74,10 +74,12 @@ const creatEventFXN=async(req,res)=>{
     }
     return total;
   }, 0);
-  console.log("totalTicketQuantity:",totalTicketQuantity)
-  if (maxAttdtonumber !== totalTicketQuantity) {
-    return res.status(400).json({ msg: "Maximum attendees configure must equal total ticket quantity configured" });
-  } 
+  // console.log("totalTicketQuantity:",totalTicketQuantity)
+  
+  //THIS VALIDATION REMOVAL WAS REQUESTED BY ADERIBIGBE EMMANUEL OKIKIOLA(PROJECT MANAGER), BUT IT IS IMPORTANT TO NOTE THAT THIS VALIDATION ENSURES THAT THE MAXIMUM ATTENDEES CONFIGURED MATCHES THE TOTAL TICKET QUANTITY CONFIGURED.THIS CAN CAUSE OF DATA INCONSISTENCY AND POTENTIAL ISSUES IN EVENT MANAGEMENT. PLEASE ENSURE THAT THIS CHANGE IS WELL UNDERSTOOD AND DOCUMENTED.
+  
+  //   return res.status(400).json({ msg: "Maximum attendees configure must equal total ticket quantity configured" });
+  // } 
 
 
   const fullStartTime = `${startTime} ${startClock} `;
