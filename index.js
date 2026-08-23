@@ -278,6 +278,7 @@ const dashbdgreetings=require("./routes/dashbdgreetRout")
 const purchaseList=require("./routes/purchaseListRout")
 const pendingWithdrawal=require("./routes/financeRout")
 const withdrawalDetails=require("./routes/financeRout")
+const ticketzform=require("./routes/ticketzformRoute")
 
 // app.use(checkSession)
 // app.use(logActivity)
@@ -318,6 +319,7 @@ app.use("/api",purchaseList);// PURCHASE LIST API
 app.use("/api",socialDetail);// SOCIAL DETAILS API
 app.use("/api",pendingWithdrawal);// PENDING WITHDRAWAL API
 app.use("/api",withdrawalDetails);// WITHDRAWAL DETAILS API
+app.use("/api",ticketzform);// TICKET FORM AFTER PAYMENT API
 
 app.get('/userInfo', async (req, res) => {
   try {
